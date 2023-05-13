@@ -49,9 +49,9 @@ The `clean_and_split_for_linear` function is very similar to `clean_and_split_fo
 To train machine learning models, you can use the `train_models` module:
 
 ```python
-from boston311.train_models import train_model
 
-model = train_model(cleaned_data)
+model = train_logistic_model(data, scenario)
+model = train_linear_model(data, scenario)
 ```
 
 ### Running Unit Tests
