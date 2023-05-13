@@ -1,3 +1,5 @@
+import pandas as pd
+
 def clean_and_split_for_logistic(myData, scenario) :
 
   data = myData.copy()
