@@ -7,7 +7,7 @@ This repository contains a Python package for working with the Boston 311 servic
 To install the package, you can use pip:
 
 ```
-pip install git+https://github.com/<your-username>/<your-repo-name>/Boston-311-py-package.git
+pip install git+https://github.com/mindfulcoder49/Boston_311.git
 ```
 
 ## Usage

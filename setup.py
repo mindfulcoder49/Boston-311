@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='Boston-311',
+    name='Boston_311',
     version='0.1',
     packages=find_packages(),
     install_requires=[
@@ -22,7 +22,7 @@ setup(
     author_email='alex.g.alcivar49@gmail.com',
     description='A package for training machine learning models on Boston 311 data',
     long_description='A package for training machine learning models on Boston 311 data',
-    url='https://github.com/mindfulcoder49/Boston-311',
+    url='https://github.com/mindfulcoder49/Boston_311',
     classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: MIT License',
