@@ -1,9 +1,7 @@
-from setuptools import setup, find_packages
-
-setup(
-    name='boston_311',
+import setuptools
+setuptools.setup(
+    name='boston311',
     version='0.1',
-    packages=find_packages(),
     install_requires=[
         'numpy',
         'pandas',
@@ -17,6 +15,8 @@ setup(
             # Add any other console scripts you want to install here
         ]
     },
+    package_dir={'': 'src'},
+    packages=setuptools.find_packages(where='src'),
     # Metadata about your project
     author='Alex Alcivar',
     author_email='alex.g.alcivar49@gmail.com',
