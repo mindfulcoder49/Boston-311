@@ -25,8 +25,8 @@ data = load_data_from_urls()
 To clean the data, you can use the `data_clean` module:
 
 ```python
-logistic_X, logistic_y = clean_and_split_for_logistic(df_all, scenario)
-linear_X, linear_y = clean_and_split_for_linear(df_all, scenario)
+logistic_X, logistic_y = clean_and_split_for_logistic(data, scenario)
+linear_X, linear_y = clean_and_split_for_linear(data, scenario)
 ```
 
 There are two functions: `clean_and_split_for_logistic` and `clean_and_split_for_linear`. Both functions receive a pandas dataframe `myData` and a list of integers `scenario` that specifies which data cleaning steps should be applied to the data.

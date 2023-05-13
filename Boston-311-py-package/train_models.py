@@ -1,7 +1,8 @@
+import data_clean
 
-def train_logistic_model(scenario) :
+def train_logistic_model(data, scenario) :
 
-    logistic_X, logistic_y = clean_and_split_for_logistic(df_all, scenario)
+    logistic_X, logistic_y = clean_and_split_for_logistic(data, scenario)
 
     #Train a logistic regression model
 
@@ -38,9 +39,9 @@ def train_logistic_model(scenario) :
 
     return model
 
-def train_linear_model(scenario) :
+def train_linear_model(data, scenario) :
 
-    linear_X, linear_y = clean_and_split_for_linear(df_all, scenario)
+    linear_X, linear_y = clean_and_split_for_linear(data, scenario)
 
     #Train a linear regression model
 
