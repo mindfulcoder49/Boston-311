@@ -13,8 +13,3 @@ from datetime import datetime
 from pandas.testing import assert_frame_equal, assert_series_equal
 
 from IPython.display import display
-
-from data_clean import *
-from unit_tests import *
-from load_data import *
-from train_models import * 
