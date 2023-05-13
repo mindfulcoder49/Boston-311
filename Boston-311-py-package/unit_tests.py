@@ -1,5 +1,3 @@
-from pandas.testing import assert_frame_equal, assert_series_equal
-
 def test_data_clean_functions() :
   #set up the test data
   test_data_2022 = pd.DataFrame({'case_enquiry_id': [101004125189,
