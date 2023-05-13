@@ -31,17 +31,29 @@ linear_X, linear_y = clean_and_split_for_linear(data, scenario)
 
 There are two functions: `clean_and_split_for_logistic` and `clean_and_split_for_linear`. Both functions receive a pandas dataframe `myData` and a list of integers `scenario` that specifies which data cleaning steps should be applied to the data.
 
-The `clean_and_split_for_logistic` function first creates a copy of the input dataframe. It then converts the `open_dt` and `close_dt` columns to datetime, calculates the `survival_time` as the difference between `closed_dt` and `open_dt`, and creates a binary `event` column that is 1 if the case was closed and 0 otherwise. The `ward_number` column is extracted from the `ward` column. Then, the function applies different scenarios to the data, depending on the integers in the `scenario` list:
+#### Basic logistic model
 
-- Scenario 1: any open cases from the last month are dropped, considering the date 2023-04-09 as the cutoff date.
-- Scenario 2: the `event` value is switched to 0 for any cases that took longer than a month to close.
-- Scenario 3: all records where `source` is "Employee Generated" or "City Worker App" are removed.
-- Scenario 4: all records where `survival_time` is less than an hour are removed.
-- Scenario 5: the `type` column is one-hot encoded and added to the data.
+No outlier removal. y output is a series of 0 or 1 corresponding to whether a case is Open or Closed, with 0 marking Open and 1 marking closed. X dataframe should contain only dummied columns for the 'subject', 'reason', 'department', 'source', and 'ward_number' columns.
 
-After applying the scenarios, the function drops some columns that are not needed and one-hot encodes the categorical columns listed in `dummy_list`. Finally, the function creates a `X` dataframe with the one-hot encoded data, dropping the `case_enquiry_id`, `event`, and `survival_time` columns, and creates a `y` series with the `event` column.
+#### Basic linear model
 
-The `clean_and_split_for_linear` function is very similar to `clean_and_split_for_logistic`, but it also drops cases with missing `survival_time`, creates a `survival_time_hours` column with the `survival_time` in hours, and does not drop the `survival_time` column. Additionally, it does not apply scenario 1 (drop open cases from the last month) or scenario 2 (switch `event` to 0 for cases that took longer than a month to close).
+No outlier removal. y output is a series of floats corresponding to the number of hours between case open date and case close date. All open cases are dropped. 
+
+
+| Model Type | Cleaning Scenario | Description |
+| --- | --- | --- |
+| Logistic | 0 | No Change from basic |
+| Logistic | 1 | Drop any open cases from the last month. |
+| Logistic | 2 | Switch the event value for any cases that took longer than a month to close. |
+| Logistic | 3 | All records where source is "Employee Generated" or "City Worker App" are removed. |
+| Logistic | 4 | All records where survival_time is less than an hour are removed. |
+| Logistic | 5 | The type column is one-hot encoded and added to the data. |
+| Linear | 0 | No change from basic|
+| Linear | 1 | Remove records if the case took more than a month to close. |
+| Linear | 2 | Remove records only if the time to close is negative. |
+| Linear | 3 | All records where source is "Employee Generated" or "City Worker App" are removed. |
+| Linear | 4 | All records where survival_time is less than an hour are removed. |
+| Linear | 5 | The type column is one-hot encoded and added to the data. |
 
 
 ### Training Machine Learning Models
