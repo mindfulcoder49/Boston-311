@@ -92,3 +92,4 @@ The `results` folder contains Jupyter notebooks used for developing the code in 
 | 6 | Boston311_v6 | Further exploration of label outliers and improving data cleaning function flexibility |
 | 7 | Boston311_v7 | Creating Unit Tests for our data clean functions |
 | 8 | Boston311_v8 | Creating More Data Cleaning Scenarios and Models |
+| 9 | Boston311_v9 | Converting our code to a python package on GitHub |
