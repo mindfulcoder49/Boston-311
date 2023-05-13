@@ -40,20 +40,22 @@ No outlier removal. y output is a series of 0 or 1 corresponding to whether a ca
 No outlier removal. y output is a series of floats corresponding to the number of hours between case open date and case close date. All open cases are dropped. 
 
 
-| Model Type | Cleaning Scenario | Description |
-| --- | --- | --- |
-| Logistic | 0 | No Change from basic |
-| Logistic | 1 | Drop any open cases from the last month. |
-| Logistic | 2 | Switch the event value for any cases that took longer than a month to close. |
-| Logistic | 3 | All records where source is "Employee Generated" or "City Worker App" are removed. |
-| Logistic | 4 | All records where survival_time is less than an hour are removed. |
-| Logistic | 5 | The type column is one-hot encoded and added to the data. |
-| Linear | 0 | No change from basic|
-| Linear | 1 | Remove records if the case took more than a month to close. |
-| Linear | 2 | Remove records only if the time to close is negative. |
-| Linear | 3 | All records where source is "Employee Generated" or "City Worker App" are removed. |
-| Linear | 4 | All records where survival_time is less than an hour are removed. |
-| Linear | 5 | The type column is one-hot encoded and added to the data. |
+| Scenario | Description |
+| --- | --- |
+| **Logistic cleaning:** |  |
+| Scenario 0 | No Change from Basic |
+| Scenario 1 | drop any open cases from the last month |
+| Scenario 2 | switch the event value for any cases that took longer than a month to close. |
+| Scenario 3 | all records where source is "Employee Generated" or "City Worker App" are removed. |
+| Scenario 4 | all records where survival_time is less than an hour are removed. |
+| Scenario 5 | the type column is one-hot encoded and added to the data. |
+| **Linear cleaning:** |  |
+| Scenario 0 | no change from basic |
+| Scenario 1 | remove records if the case took more than a month to close |
+| Scenario 2 | remove records only if the time to close is negative |
+| Scenario 3 | all records where source is "Employee Generated" or "City Worker App" are removed. |
+| Scenario 4 | all records where survival_time is less than an hour are removed. |
+| Scenario 5 | the type column is one-hot encoded and added to the data. |
 
 
 ### Training Machine Learning Models
