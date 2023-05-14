@@ -84,12 +84,12 @@ class Boston311Model:
         
     '''
     def clean_data(self, data) :
-        for key, value in self.scenario :
+        for key, value in self.scenario.items() :
             if key == 'dropColumnValues' :
-                for column, column_values in value :
+                for column, column_values in value.items() :
                     data = data[~data[column].isin(column_values)]
             if key == 'keepColumnValues' :
-                for column, column_values in value :
+                for column, column_values in value.items() :
                     data = data[data[column].isin(column_values)]
             if key == 'dropOpen' :
                 data = data[(data['event'] == 1) | (data['open_dt'] < pd.to_datetime(value))]
