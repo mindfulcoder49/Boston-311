@@ -103,7 +103,7 @@ class Boston311Model:
             # implement later
             # if key == 'survivalTimeFill' :
         '''
-        
+
         #get a list of all columns not in feature_columns or our two labels
         cols_to_drop = data.columns.difference(self.feature_columns + ['event', 'survival_time_hours'])
 
@@ -112,7 +112,7 @@ class Boston311Model:
         for column in self.feature_columns :
             self.feature_dict[column] = data[column].unique().tolist()
         
-        data = pd.get_dummies(data, columns=self.feature_columns)
+        pd.get_dummies(data, columns=self.feature_columns, inplace=True)
 
 
 
