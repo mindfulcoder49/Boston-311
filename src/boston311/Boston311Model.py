@@ -54,6 +54,7 @@ class Boston311Model:
         # create a boolean mask for non-NaN values
         mask = data['survival_time'].notna()  
         data.loc[mask, 'survival_time_hours'] = data.loc[mask, 'survival_time'].apply(lambda x: x.total_seconds() / 3600)
+        return data
     
     '''
     clean_data() - this will drop any columns not in feature_columns, create the feature_dict, and one-hot encode the training data
@@ -84,7 +85,7 @@ class Boston311Model:
         
     '''
     def clean_data(self, data) :
-        '''
+        
         for key, value in self.scenario.items() :
             if key == 'dropColumnValues' :
                 for column, column_values in value.items() :
@@ -102,17 +103,19 @@ class Boston311Model:
                 data = data[(data['event'] == 0) | (data['survival_time'] <= delta)]
             # implement later
             # if key == 'survivalTimeFill' :
-        '''
-
+        
+        
         #get a list of all columns not in feature_columns or our two labels
         cols_to_drop = data.columns.difference(self.feature_columns + ['event', 'survival_time_hours'])
 
-        data.drop(columns=cols_to_drop, inplace=True)
+        data = data.drop(columns=cols_to_drop, axis=1)
 
         for column in self.feature_columns :
             self.feature_dict[column] = data[column].unique().tolist()
         
-        pd.get_dummies(data, columns=self.feature_columns, inplace=True)
+        data = pd.get_dummies(data, columns=self.feature_columns)
+
+        return data
 
 
 
@@ -209,8 +212,8 @@ class Boston311Model:
 
     def run_pipeline( self ) :
         data = self.load_data()
-        self.enhance_data(data)
-        self.clean_data(data)
+        data = self.enhance_data(data)
+        data = self.clean_data(data)
         X, y = self.split_data(data)
         self.train_model( X, y )
     
