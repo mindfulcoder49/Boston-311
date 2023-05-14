@@ -1,1 +1,4 @@
 Boston_311.code-workspace
+bdist.linux-x86_64
+lib
+lib/*

@@ -1,6 +1,8 @@
 import pandas as pd
 
-def load_data_from_urls() :
+
+#if load_data_from_urls gets a list of years, it will only load data from those years, otherwise it will load all data
+def load_data_from_urls(*args) :
     url_2023 = "https://data.boston.gov/dataset/8048697b-ad64-4bfc-b090-ee00169f2323/resource/e6013a93-1321-4f2a-bf91-8d8a02f1e62f/download/tmp9g_820k8.csv"
     url_2022 = "https://data.boston.gov/dataset/8048697b-ad64-4bfc-b090-ee00169f2323/resource/81a7b022-f8fc-4da5-80e4-b160058ca207/download/tmph4izx_fb.csv"
     url_2021 = "https://data.boston.gov/dataset/8048697b-ad64-4bfc-b090-ee00169f2323/resource/f53ebccd-bc61-49f9-83db-625f209c95f5/download/tmppgq9965_.csv"
@@ -17,7 +19,32 @@ def load_data_from_urls() :
 
 
     # Get a list of all CSV files in the directory
-    all_files = [url_2023, url_2022, url_2021, url_2020, url_2019, url_2018, url_2017, url_2016, url_2015, url_2014, url_2013, url_2012, url_2011]
+    files_dict = {
+    '2023': url_2023,
+    '2022': url_2022,
+    '2021': url_2021,
+    '2020': url_2020,
+    '2019': url_2019,
+    '2018': url_2018,
+    '2017': url_2017,
+    '2016': url_2016,
+    '2015': url_2015,
+    '2014': url_2014,
+    '2013': url_2013,
+    '2012': url_2012,
+    '2011': url_2011
+    }
+
+    all_files = []
+    if args != [] :
+        for value in args[0] :
+            all_files.append(files_dict[str(value)])
+    else :
+        all_files = files_dict.values 
+
+
+
+        
 
     # Create an empty list to store the dataframes
     dfs = []

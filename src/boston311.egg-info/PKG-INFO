@@ -1,0 +1,15 @@
+Metadata-Version: 2.1
+Name: boston311
+Version: 0.1
+Summary: A package for training machine learning models on Boston 311 data
+Home-page: https://github.com/mindfulcoder49/Boston_311
+Author: Alex Alcivar
+Author-email: alex.g.alcivar49@gmail.com
+License: UNKNOWN
+Platform: UNKNOWN
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+
+A package for training machine learning models on Boston 311 data
+
