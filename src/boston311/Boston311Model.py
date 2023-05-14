@@ -84,6 +84,7 @@ class Boston311Model:
         
     '''
     def clean_data(self, data) :
+        '''
         for key, value in self.scenario.items() :
             if key == 'dropColumnValues' :
                 for column, column_values in value.items() :
@@ -101,6 +102,7 @@ class Boston311Model:
                 data = data[(data['event'] == 0) | (data['survival_time'] <= delta)]
             # implement later
             # if key == 'survivalTimeFill' :
+        '''
         
         #get a list of all columns not in feature_columns or our two labels
         cols_to_drop = data.columns.difference(self.feature_columns + ['event', 'survival_time_hours'])
