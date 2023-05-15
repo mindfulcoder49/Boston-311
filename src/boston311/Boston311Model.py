@@ -42,6 +42,7 @@ class Boston311Model:
     #enhance_data( data ) - this will enhance the data according to our needs
     def enhance_data(self, data) :
         data['closed_dt'] = pd.to_datetime(data['closed_dt'])
+        data['open_dt'] = pd.to_datetime(data['open_dt'])
         data['survival_time'] = data['closed_dt'] - data['open_dt']
         data['event'] = data['closed_dt'].notnull().astype(int)
         data['ward_number'] = data['ward'].str.extract(r'0*(\d+)')
