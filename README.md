@@ -51,3 +51,22 @@ This method trains the machine learning model using the cleaned data. It splits 
 ### `predict(self, data)`
 
 This method makes predictions on new data using the trained model. It returns a numpy array of predicted values.
+
+## Results
+
+The `results` folder contains Jupyter notebooks used for developing the code in this repository.
+
+### Table of Contents
+
+| Number | Notebook Name | Description |
+| ------ | ------------- | ----------- |
+| 1 | Boston311 | Initial Data exploration and model prototyping |
+| 2 | Boston311_v2 | Creating initial data cleaning functions for linear and logistic models |
+| 3 | Boston311_v3 | Exploring categorical outliers in the data |
+| 4 | Boston311_v4 | List all to-dos and questions, and finally train our models on all the data |
+| 5 | Boston311_v5 | Train Models after removing label outliers |
+| 6 | Boston311_v6 | Further exploration of label outliers and improving data cleaning function flexibility |
+| 7 | Boston311_v7 | Creating Unit Tests for our data clean functions |
+| 8 | Boston311_v8 | Creating More Data Cleaning Scenarios and Models |
+| 9 | Boston311_v9 | Converting our code to a python package on GitHub |
+| 10 | Boston311_v10 | Rewriting all our code as a single Boston311Model class |
