@@ -221,7 +221,7 @@ class Boston311Model:
     predict() - this will load the data based on the predict_date_range, call clean_data_for_prediction, call split data, use the model to predict the label, then use the id series to join the predictions with the original data, returning a data frame.
     '''
 
-    def load_data_from_urls(*args) :
+    def load_data_from_urls(self, *args) :
         url_2023 = "https://data.boston.gov/dataset/8048697b-ad64-4bfc-b090-ee00169f2323/resource/e6013a93-1321-4f2a-bf91-8d8a02f1e62f/download/tmp9g_820k8.csv"
         url_2022 = "https://data.boston.gov/dataset/8048697b-ad64-4bfc-b090-ee00169f2323/resource/81a7b022-f8fc-4da5-80e4-b160058ca207/download/tmph4izx_fb.csv"
         url_2021 = "https://data.boston.gov/dataset/8048697b-ad64-4bfc-b090-ee00169f2323/resource/f53ebccd-bc61-49f9-83db-625f209c95f5/download/tmppgq9965_.csv"
