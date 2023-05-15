@@ -1,6 +1,6 @@
-# Boston 311 Python Package
+# Boston311Model
 
-This repository contains a Python package for working with the Boston 311 service request data. The package provides functionality for loading and cleaning the data, training machine learning models, and running unit tests.
+This is a class that defines a model to predict the likelihood of a 311 request in Boston being closed, given a set of input features. The model is built using `tensorflow` and `sklearn` libraries.
 
 ## Installation
 
@@ -10,86 +10,44 @@ To install the package, you can use pip:
 pip install git+https://github.com/mindfulcoder49/Boston_311.git
 ```
 
-## Usage
+## Class Attributes
 
-### Loading the Data
+- `model`: The trained machine learning model used for prediction.
+- `feature_columns`: A list of feature column names used in the model.
+- `feature_dict`: A dictionary where keys are the feature column names and values are lists of all the possible values for that feature.
+- `train_date_range`: A dictionary with keys `"start"` and `"end"`, containing the start and end dates (as datetime objects) for the training data.
+- `predict_date_range`: A dictionary with keys `"start"` and `"end"`, containing the start and end dates (as datetime objects) for the prediction data.
+- `scenario`: A dictionary of scenarios that can be applied to the data during cleaning. The valid keys and values are described in the `clean_data()` method.
+- `model_type`: A string indicating the type of model used (e.g., linear, logistic, etc).
 
-To load the data, you can use the `load_data` module:
+## Class Methods
 
-```python
-data = load_data_from_urls()
-```
+### `__init__(self, **kwargs)`
 
+Constructor method for the class. Initializes all the class attributes with values passed as keyword arguments.
 
-### Cleaning the Data
-To clean the data, you can use the `data_clean` module:
+### `load_data(self)`
 
-```python
-logistic_X, logistic_y = clean_and_split_for_logistic(data, scenario)
-linear_X, linear_y = clean_and_split_for_linear(data, scenario)
-```
+This method loads the data for training the model. It returns a Pandas DataFrame containing the data for the specified time period.
 
-There are two functions: `clean_and_split_for_logistic` and `clean_and_split_for_linear`. Both functions receive a pandas dataframe `myData` and a list of integers `scenario` that specifies which data cleaning steps should be applied to the data.
+### `enhance_data(self, data)`
 
-#### Basic logistic model
+This method enhances the data by adding new columns. Specifically, it calculates the survival time (time between open and close date) and event (whether the request has been closed or not) columns. It also extracts the ward number from the ward column and converts the survival time to hours.
 
-No outlier removal. y output is a series of 0 or 1 corresponding to whether a case is Open or Closed, with 0 marking Open and 1 marking closed. X dataframe should contain only dummied columns for the 'subject', 'reason', 'department', 'source', and 'ward_number' columns.
+### `clean_data(self, data)`
 
-#### Basic linear model
+This method drops any columns not in `feature_columns`, creates the `feature_dict`, and one-hot encodes the training data. It also applies scenarios to the data, if specified in the `scenario` attribute. The valid keys and values for the `scenario` dictionary are:
 
-No outlier removal. y output is a series of floats corresponding to the number of hours between case open date and case close date. All open cases are dropped. 
+- `dropColumnValues`: A dictionary of column names and lists of values to drop.
+- `keepColumnValues`: A dictionary of column names and lists of values to keep, all others being dropped.
+- `dropOpen`: Drop all open cases after a certain date.
+- `survivalTimeMin`: Drop all closed cases where survival time is less than a given number of seconds.
+- `survivalTimeMax`: Drop all closed cases where survival time is more than a given number of seconds.
 
+### `train_model(self, data)`
 
-| Scenario | Description |
-| --- | --- |
-| **Logistic cleaning:** |  |
-| Scenario 0 | No Change from Basic |
-| Scenario 1 | drop any open cases from the last month |
-| Scenario 2 | switch the event value for any cases that took longer than a month to close. |
-| Scenario 3 | all records where source is "Employee Generated" or "City Worker App" are removed. |
-| Scenario 4 | all records where survival_time is less than an hour are removed. |
-| Scenario 5 | the type column is one-hot encoded and added to the data. |
-| **Linear cleaning:** |  |
-| Scenario 0 | no change from basic |
-| Scenario 1 | remove records if the case took more than a month to close |
-| Scenario 2 | remove records only if the time to close is negative |
-| Scenario 3 | all records where source is "Employee Generated" or "City Worker App" are removed. |
-| Scenario 4 | all records where survival_time is less than an hour are removed. |
-| Scenario 5 | the type column is one-hot encoded and added to the data. |
+This method trains the machine learning model using the cleaned data. It splits the data into training and testing sets, scales the features, and trains the model using logistic regression.
 
+### `predict(self, data)`
 
-### Training Machine Learning Models
-
-To train machine learning models, you can use the `train_models` module:
-
-```python
-
-model = train_logistic_model(data, scenario)
-model = train_linear_model(data, scenario)
-```
-
-### Running Unit Tests
-
-THe unit_tests.py module contains a function to run unit tests on the data cleaning module
-
-```python
-test_data_clean_functions() 
-```
-
-## Results
-
-The `results` folder contains Jupyter notebooks used for developing the code in this repository.
-
-###Table of Contents
-
-| Number | Notebook Name | Description |
-| ------ | ------------- | ----------- |
-| 1 | Boston311 | Initial Data exploration and model prototyping |
-| 2 | Boston311_v2 | Creating initial data cleaning functions for linear and logistic models |
-| 3 | Boston311_v3 | Exploring categorical outliers in the data |
-| 4 | Boston311_v4 | List all to-dos and questions, and finally train our models on all the data |
-| 5 | Boston311_v5 | Train Models after removing label outliers |
-| 6 | Boston311_v6 | Further exploration of label outliers and improving data cleaning function flexibility |
-| 7 | Boston311_v7 | Creating Unit Tests for our data clean functions |
-| 8 | Boston311_v8 | Creating More Data Cleaning Scenarios and Models |
-| 9 | Boston311_v9 | Converting our code to a python package on GitHub |
+This method makes predictions on new data using the trained model. It returns a numpy array of predicted values.
