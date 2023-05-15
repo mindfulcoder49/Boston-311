@@ -99,6 +99,9 @@ class Boston311Model:
             if key == 'survivalTimeMax' :
                 delta = pd.Timedelta(seconds=value)
                 data = data[(data['event'] == 0) | (data['survival_time'] <= delta)]
+            if key == 'eventToZeroforSurvivalTimeGreaterThan' :
+                delta = pd.Timedelta(seconds=value)
+                data.loc[(data['event'] == 1) & (data['survival_time'] > delta), 'event'] = 0
             # implement later
             # if key == 'survivalTimeFill' :
         

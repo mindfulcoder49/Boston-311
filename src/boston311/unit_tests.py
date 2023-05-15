@@ -447,12 +447,54 @@ def test_data_clean_functions() :
 
 
     #call the function with the test data
+    '''
     logistic_test_X_0, logistic_test_y_0 = clean_and_split_for_logistic(test_data_2022, [0])
     logistic_test_X_1, logistic_test_y_1 = clean_and_split_for_logistic(test_data_2022, [1, 2])
 
     linear_test_X_0, linear_test_y_0 = clean_and_split_for_linear(test_data_2022, [0])
     linear_test_X_1, linear_test_y_1 = clean_and_split_for_linear(test_data_2022, [1, 2])
     linear_test_X_2, linear_test_y_2 = clean_and_split_for_linear(test_data_2022, [2])
+    '''
+
+    myBoston311Model_0 = Boston311Model(feature_columns=['subject', 'reason', 'department', 'source', 'ward_number' ],
+                                      model_type="logistic",
+                                      scenario={})
+    test_data_enhanced_0 = myBoston311Model_0.enhance_data(test_data_2022)
+    test_data_cleaned_0 = myBoston311Model_0.clean_data(test_data_enhanced_0)
+    logistic_test_X_0, logistic_test_y_0 = myBoston311Model_0.split_data(test_data_cleaned_0)
+
+    myBoston311Model_1 = Boston311Model(feature_columns=['subject', 'reason', 'department', 'source', 'ward_number' ],
+                                      model_type="logistic",
+                                      scenario={'dropOpen':'2023-04-09',
+                                      'eventToZeroforSurvivalTimeGreaterThan': 2678400})
+    test_data_enhanced_1 = myBoston311Model_1.enhance_data(test_data_2022)
+    test_data_cleaned_1 = myBoston311Model_1.clean_data(test_data_enhanced_1)
+    logistic_test_X_1, logistic_test_y_1 = myBoston311Model_1.split_data(test_data_cleaned_1)
+
+    myBoston311Model_lin0 = Boston311Model(feature_columns=['subject', 'reason', 'department', 'source', 'ward_number' ],
+                                      model_type="linear",
+                                      scenario={'dropOpen':'2021-12-31'})
+    test_data_enhanced_lin0 = myBoston311Model_lin0.enhance_data(test_data_2022)
+    test_data_cleaned_lin0 = myBoston311Model_lin0.clean_data(test_data_enhanced_lin0)
+    linear_test_X_0, linear_test_y_0 = myBoston311Model_lin0.split_data(test_data_cleaned_lin0)
+
+    myBoston311Model_lin1 = Boston311Model(feature_columns=['subject', 'reason', 'department', 'source', 'ward_number' ],
+                                      model_type="linear",
+                                      scenario={'dropOpen':'2021-12-31',
+                                                'survivalTimeMax':2678400,
+                                                'survivalTimeMin':0})
+    test_data_enhanced_lin1 = myBoston311Model_lin1.enhance_data(test_data_2022)
+    test_data_cleaned_lin1 = myBoston311Model_lin1.clean_data(test_data_enhanced_lin1)
+    linear_test_X_1, linear_test_y_1 = myBoston311Model_lin1.split_data(test_data_cleaned_lin1)
+
+
+    myBoston311Model_lin2 = Boston311Model(feature_columns=['subject', 'reason', 'department', 'source', 'ward_number' ],
+                                      model_type="linear",
+                                      scenario={'dropOpen':'2021-12-31',
+                                                'survivalTimeMin':0})
+    test_data_enhanced_lin2 = myBoston311Model_lin2.enhance_data(test_data_2022)
+    test_data_cleaned_lin2 = myBoston311Model_lin2.clean_data(test_data_enhanced_lin2)
+    linear_test_X_2, linear_test_y_2 = myBoston311Model_lin2.split_data(test_data_cleaned_lin2)
 
 
     #check if the function output matches the expected output when reindexed
