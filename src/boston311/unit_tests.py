@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from pandas.testing import assert_frame_equal, assert_series_equal
-from Boston311Model import Boston311Model
+from .Boston311Model import Boston311Model
 
 def test_data_clean_functions() :
     #set up the test data
