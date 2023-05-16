@@ -137,6 +137,8 @@ class Boston311Model:
 
         data = self.one_hot_encode_with_feature_dict( data )
 
+        return data
+
     def one_hot_encode_with_feature_dict( self, data ) :
         
         # Loop through each column in the DataFrame
@@ -145,7 +147,7 @@ class Boston311Model:
             allowed = self.feature_dict.get(column, [])
             
             # Loop through each value in the column
-            for i, value in data[column].iteritems():
+            for i, value in data[column].items():
                 # Check if the value is in the list of allowed values
                 if value not in allowed:
                     # Replace the value with a null value
@@ -163,6 +165,7 @@ class Boston311Model:
 
                 # append the fake record to the list of fake records
                 fake_records.append(fake_record)
+
         fake_df = pd.DataFrame(fake_records)
 
         # Concatenate fake records with original data
