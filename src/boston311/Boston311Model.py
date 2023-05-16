@@ -181,7 +181,7 @@ class Boston311Model:
     def predict( self ) :
         data = self.load_data( 'predict' )
         data = self.enhance_data( data )
-        data = self.clean_data_for_prediction
+        data = self.clean_data_for_prediction( data )
         X_predict, y_predict = self.split_data( data )
         y_predict = self.model.predict(X_predict)
         return data, y_predict
