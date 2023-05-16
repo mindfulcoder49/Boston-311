@@ -29,9 +29,14 @@ class Boston311Model:
 
     
     #load_data() - this will use the start_date and end_date. It will return a dataframe
-    def load_data(self) :
-        start_date = pd.to_datetime(self.train_date_range['start'])
-        end_date = pd.to_datetime(self.train_date_range['end'])
+    def load_data(self, train_or_predict='train') :
+        start_date, end_date = None, None
+        if train_or_predict == 'train' :
+            start_date = pd.to_datetime(self.train_date_range['start'])
+            end_date = pd.to_datetime(self.train_date_range['end'])
+        elif train_or_predict == 'predict' :
+            start_date = pd.to_datetime(self.predict_date_range['start'])
+            end_date = pd.to_datetime(self.predict_date_range['end'])
         data = self.load_data_from_urls(range(start_date.year, end_date.year+1))
 
         data['open_dt'] = pd.to_datetime(data['open_dt'])
@@ -120,7 +125,66 @@ class Boston311Model:
         return data
 
 
+    '''
+    clean_data_for_prediction( data ) - this will drop any columns not in feature_columns, and one hot encode the training data for prediction with the model by using the feature_columns and feature_dict to ensure the cleaned data is in the correct format for prediction with this model.
+    '''
 
+    def clean_data_for_prediction( self, data ) :
+        
+        cols_to_drop = data.columns.difference(self.feature_columns + ['event', 'survival_time_hours'])
+
+        data = data.drop(columns=cols_to_drop, axis=1)
+
+        data = self.one_hot_encode_with_feature_dict( data )
+
+    def one_hot_encode_with_feature_dict( self, data ) :
+        
+        # Loop through each column in the DataFrame
+        for column in data.columns:
+            # Get the list of allowed values for this column
+            allowed = self.feature_dict.get(column, [])
+            
+            # Loop through each value in the column
+            for i, value in data[column].iteritems():
+                # Check if the value is in the list of allowed values
+                if value not in allowed:
+                    # Replace the value with a null value
+                    data.at[i, column] = None
+        
+        fake_records = []
+        for col, vals in self.feature_dict.items():
+            missing_vals = set(vals) - set(data[col])
+            for val in missing_vals:
+                # create a dictionary with null values for all columns in your DataFrame
+                fake_record = {col: None for col in data.columns}
+
+                # update the dictionary with the non-null value for the current column
+                fake_record[col] = val
+
+                # append the fake record to the list of fake records
+                fake_records.append(fake_record)
+        fake_df = pd.DataFrame(fake_records)
+
+        # Concatenate fake records with original data
+        data = pd.concat([data, fake_df], ignore_index=True)
+
+        # Get dummies and drop fake records
+        dummies = pd.get_dummies(data, columns=self.feature_dict.keys())
+        dummies = dummies.iloc[:-len(fake_df), :]
+
+        return dummies
+
+
+    '''
+    predict() - this will load the data based on the predict_date_range, call clean_data_for_prediction, call split data, use the model to predict the label, then use the id series to join the predictions with the original data, returning a data frame.
+    '''
+    def predict( self ) :
+        data = self.load_data( 'predict' )
+        data = self.enhance_data( data )
+        data = self.clean_data_for_prediction
+        X_predict, y_predict = self.split_data( data )
+        y_predict = self.model.predict(X_predict)
+        return data, y_predict
 
     '''
     split_data( data ) - this takes data that is ready for training and splits it into an id series, a feature matrix, and a label series
@@ -219,11 +283,6 @@ class Boston311Model:
         X, y = self.split_data(data)
         self.train_model( X, y )
     
-    '''
-    clean_data_for_prediction( data ) - this will drop any columns not in feature_columns, and one hot encode the training data for prediction with the model by using the feature_columns and feature_dict to ensure the cleaned data is in the correct format for prediction with this model.
-
-    predict() - this will load the data based on the predict_date_range, call clean_data_for_prediction, call split data, use the model to predict the label, then use the id series to join the predictions with the original data, returning a data frame.
-    '''
 
     def load_data_from_urls(self, *args) :
         url_2023 = "https://data.boston.gov/dataset/8048697b-ad64-4bfc-b090-ee00169f2323/resource/e6013a93-1321-4f2a-bf91-8d8a02f1e62f/download/tmp9g_820k8.csv"
@@ -261,7 +320,8 @@ class Boston311Model:
         all_files = []
         if args != [] :
             for value in args[0] :
-                all_files.append(files_dict[str(value)])
+                if str(value) in files_dict.keys() :
+                    all_files.append(files_dict[str(value)])
         else :
             all_files = files_dict.values 
 
