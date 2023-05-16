@@ -41,16 +41,12 @@ class Boston311Model:
 
         data['open_dt'] = pd.to_datetime(data['open_dt'])
         data = data[(data['open_dt'] >= start_date) & (data['open_dt'] <= end_date)]
-        
-        if train_or_predict == 'predict' :
-            #drop closed cases
-            data = data[(data['event'] == 0)]
             
         return data 
 
     
     #enhance_data( data ) - this will enhance the data according to our needs
-    def enhance_data(self, data) :
+    def enhance_data(self, data, train_or_predict='train') :
         data['closed_dt'] = pd.to_datetime(data['closed_dt'])
         data['open_dt'] = pd.to_datetime(data['open_dt'])
         data['survival_time'] = data['closed_dt'] - data['open_dt']
@@ -63,6 +59,11 @@ class Boston311Model:
         # create a boolean mask for non-NaN values
         mask = data['survival_time'].notna()  
         data.loc[mask, 'survival_time_hours'] = data.loc[mask, 'survival_time'].apply(lambda x: x.total_seconds() / 3600)
+
+        if train_or_predict == 'predict' :
+            #drop closed cases
+            data = data[(data['event'] == 0)]
+
         return data
     
     '''
@@ -188,7 +189,7 @@ class Boston311Model:
     '''
     def predict( self ) :
         data = self.load_data( 'predict' )
-        data = self.enhance_data( data )
+        data = self.enhance_data( data, 'predict')
         clean_data = self.clean_data_for_prediction( data )
         X_predict, y_predict = self.split_data( clean_data )
         y_predict = self.model.predict(X_predict)
