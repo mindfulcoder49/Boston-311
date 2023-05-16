@@ -41,6 +41,11 @@ class Boston311Model:
 
         data['open_dt'] = pd.to_datetime(data['open_dt'])
         data = data[(data['open_dt'] >= start_date) & (data['open_dt'] <= end_date)]
+        
+        if train_or_predict == 'predict' :
+            #drop closed cases
+            data = data[(data['event'] == 0)]
+            
         return data 
 
     
@@ -184,8 +189,8 @@ class Boston311Model:
     def predict( self ) :
         data = self.load_data( 'predict' )
         data = self.enhance_data( data )
-        data = self.clean_data_for_prediction( data )
-        X_predict, y_predict = self.split_data( data )
+        clean_data = self.clean_data_for_prediction( data )
+        X_predict, y_predict = self.split_data( clean_data )
         y_predict = self.model.predict(X_predict)
         return data, y_predict
 
