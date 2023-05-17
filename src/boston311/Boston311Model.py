@@ -64,6 +64,10 @@ class Boston311Model:
             #drop closed cases
             data = data[(data['event'] == 0)]
 
+        if self.model_type == 'linear' :
+            #drop open cases
+            data = data[(data['event'] == 1)]
+
         return data
     
     '''
