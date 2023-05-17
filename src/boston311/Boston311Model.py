@@ -64,7 +64,15 @@ class Boston311Model:
             #drop closed cases
             data = data[(data['event'] == 0)]
 
-        if self.model_type == 'linear' :
+            for key, value in self.scenario.items() :
+              if key == 'dropColumnValues' :
+                  for column, column_values in value.items() :
+                      data = data[~data[column].isin(column_values)]
+              if key == 'keepColumnValues' :
+                  for column, column_values in value.items() :
+                      data = data[data[column].isin(column_values)]
+
+        if self.model_type == 'linear' and train_or_predict == 'train' :
             #drop open cases
             data = data[(data['event'] == 1)]
 
@@ -197,7 +205,11 @@ class Boston311Model:
         clean_data = self.clean_data_for_prediction( data )
         X_predict, y_predict = self.split_data( clean_data )
         y_predict = self.model.predict(X_predict)
-        return data, y_predict
+        data['survival_prediction'] = y_predict
+        data['survival_timedelta'] = data['survival_prediction'].apply(lambda x: pd.Timedelta(seconds=(x*3600)))
+        data['closed_dt_prediction'] = data['open_dt'] + data['survival_timedelta']
+
+        return data
 
     '''
     split_data( data ) - this takes data that is ready for training and splits it into an id series, a feature matrix, and a label series
