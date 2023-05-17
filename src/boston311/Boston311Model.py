@@ -5,6 +5,7 @@ from sklearn.preprocessing import StandardScaler
 from datetime import datetime
 import pandas as pd
 import numpy as np
+import json
 
 class Boston311Model: 
     
@@ -27,6 +28,34 @@ class Boston311Model:
         self.model_type = kwargs.get('model_type', 'logistic')
 
 
+    def save(self, filepath):
+        # Save keras model
+        self.model.save(filepath + '/keras_model.h5')
+
+        # Save other properties
+        with open(filepath + '/properties.json', 'w') as f:
+            json.dump({
+                'feature_columns': self.feature_columns,
+                'feature_dict': self.feature_dict,
+                'train_date_range': self.train_date_range,
+                'predict_date_range': self.predict_date_range,
+                'scenario': self.scenario,
+                'model_type': self.model_type,
+            }, f)
+
+    def load(self, filepath):
+        # Load keras model
+        self.model = keras.models.load_model(filepath + '/keras_model.h5')
+
+        # Load other properties
+        with open(filepath + '/properties.json', 'r') as f:
+            properties = json.load(f)
+            self.feature_columns = properties['feature_columns']
+            self.feature_dict = properties['feature_dict']
+            self.train_date_range = properties['train_date_range']
+            self.predict_date_range = properties['predict_date_range']
+            self.scenario = properties['scenario']
+            self.model_type = properties['model_type']
     
     #load_data() - this will use the start_date and end_date. It will return a dataframe
     def load_data(self, train_or_predict='train') :
