@@ -101,7 +101,7 @@ class Boston311Model:
                   for column, column_values in value.items() :
                       data = data[data[column].isin(column_values)]
 
-        if self.model_type == 'linear' and train_or_predict == 'train' :
+        if self.model_type == 'linear' and train_or_predict == 'train' and 'survivalTimeFill' not in self.scenario :
             #drop open cases
             data = data[(data['event'] == 1)]
 
@@ -155,8 +155,13 @@ class Boston311Model:
             if key == 'eventToZeroforSurvivalTimeGreaterThan' :
                 delta = pd.Timedelta(seconds=value)
                 data.loc[(data['event'] == 1) & (data['survival_time'] > delta), 'event'] = 0
-            # implement later
-            # if key == 'survivalTimeFill' :
+            if key == 'survivalTimeFill' :
+                date = pd.to_datetime(value)
+                # create a boolean mask for non-NaN values
+                mask = data['survival_time'].isna() 
+                data.loc[mask, 'survival_time'] = date - data.loc[mask, 'open_dt']
+                data.loc[mask, 'survival_time_hours'] = data.loc[mask, 'survival_time'].apply(lambda x: x.total_seconds() / 3600)
+
         
         
         #get a list of all columns not in feature_columns or our two labels
@@ -420,6 +425,4 @@ class Boston311Model:
         # Concatenate the dataframes into a single dataframe
         df_all = pd.concat(dfs, ignore_index=True)
 
-        return df_all
-
-        
+        return df_all        
