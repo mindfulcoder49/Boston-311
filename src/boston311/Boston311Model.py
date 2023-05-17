@@ -128,8 +128,6 @@ class Boston311Model:
         survivalTimeMax - drop all closed cases where survival time is more than a given number of seconds
             value: int, a number of seconds
             e.g. 2678400
-
-        implement later:
         survivalTimeFill - fill survival_time and survival_time_hours as though they were closed on a given date
             value: datestring
             e.g. 2023-05-14
