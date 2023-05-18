@@ -268,6 +268,8 @@ class Boston311Model:
     split_data( data ) - this takes data that is ready for training and splits it into an id series, a feature matrix, and a label series
     '''
     def split_data(self, data) :
+
+        X, y = None, None 
         if self.model_type == 'logistic' :
             X = data.drop(['survival_time_hours', 'event'], axis=1) 
             y = data['event']
