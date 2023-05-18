@@ -2,12 +2,14 @@ from tensorflow import keras
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, f1_score
 from sklearn.preprocessing import StandardScaler
+from sklearn.tree import DecisionTreeClassifier
 from datetime import datetime
 from lifelines import CoxPHFitter
 from lifelines.utils import concordance_index
 import pandas as pd
 import numpy as np
 import json
+
 
 class Boston311Model: 
     
@@ -236,12 +238,22 @@ class Boston311Model:
         data = self.enhance_data( data, 'predict')
         clean_data = self.clean_data_for_prediction( data )
 
-        if self.model_type == 'linear' or self.model_type == 'logistic' :
+        if self.model_type == 'linear' :
             X_predict, y_predict = self.split_data( clean_data )
             y_predict = self.model.predict(X_predict)
             data['survival_prediction'] = y_predict
             data['survival_timedelta'] = data['survival_prediction'].apply(lambda x: pd.Timedelta(seconds=(x*3600)))
             data['closed_dt_prediction'] = data['open_dt'] + data['survival_timedelta']
+            return data
+        elif self.model_type == 'logistic' :
+            X_predict, y_predict = self.split_data( clean_data )
+            y_predict = self.model.predict(X_predict)
+            data['event_prediction'] = y_predict
+            return data
+        elif self.model_type == 'tree' :
+            X_predict, y_predict = self.split_data( clean_data )
+            y_predict = self.model.predict(X_predict)
+            data['event_prediction'] = y_predict
             return data
         elif self.model_type == "cox" :
             risks = self.model.predict_partial_hazard(clean_data) 
@@ -260,10 +272,13 @@ class Boston311Model:
             X = data.drop(['survival_time_hours', 'event'], axis=1) 
             y = data['event']
             
-            return X, y
         if self.model_type == 'linear' :
             X = data.drop(['survival_time_hours', 'event'], axis=1) 
             y = data['survival_time_hours']
+
+        if self.model_type == 'tree' :
+            X = data.drop(['survival_time_hours', 'event'], axis=1) 
+            y = data['event']
         
         return X, y 
 
@@ -278,6 +293,9 @@ class Boston311Model:
             self.model = self.train_linear_model( X, y )
         if self.model_type == 'cox' :
             self.model = self.train_cox_model(X)
+        if self.model_type == 'tree' :
+            self.model = self.train_tree_model( X, y )
+            
     
     def train_logistic_model ( self, logistic_X, logistic_y ) :
         start_time = datetime.now()
@@ -369,12 +387,41 @@ class Boston311Model:
         print("Training took {}".format(total_time))
 
         return model
+    
+    def train_tree_model ( self, tree_X, tree_y ) :
+        start_time = datetime.now()
+        print("Starting Training at {}".format(start_time))
+
+        # Split into training and testing sets
+        X_train, X_test, y_train, y_test = train_test_split(tree_X, tree_y, test_size=0.2, random_state=42)
+        X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
+
+        # Initialize the model
+        model = DecisionTreeClassifier(random_state=42)
+
+        # Fit the model
+        model.fit(X_train, y_train)
+
+        # Predict the validation set results
+        y_val_pred = model.predict(X_val)
+
+        # Calculate the accuracy
+        accuracy = accuracy_score(y_val, y_val_pred)
+
+        print('Validation accuracy:', accuracy)
+
+        end_time = datetime.now()
+        total_time = (end_time - start_time)
+        print("Ending Training at {}".format(end_time))
+        print("Training took {}".format(total_time))
+
+        return model
 
     def run_pipeline( self ) :
         data = self.load_data()
         data = self.enhance_data(data)
         data = self.clean_data(data)
-        if self.model_type == 'linear' or self.model_type == 'logistic' :
+        if self.model_type in ['linear','logistic','tree'] :
             X, y = self.split_data(data)
             self.train_model( X, y )
         elif self.model_type == 'cox' :
