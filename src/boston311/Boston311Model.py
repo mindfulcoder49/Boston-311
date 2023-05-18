@@ -3,6 +3,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, f1_score
 from sklearn.preprocessing import StandardScaler
 from datetime import datetime
+from lifelines import CoxPHFitter
+from lifelines.utils import concordance_index
 import pandas as pd
 import numpy as np
 import json
@@ -108,8 +110,6 @@ class Boston311Model:
         return data
     
     '''
-    clean_data() - this will drop any columns not in feature_columns, create the feature_dict, and one-hot encode the training data
-
     This is also where we begin applying scenarios. The scenarios parameter is a dict. 
     valid keys and values
     All algorithms:
@@ -235,13 +235,22 @@ class Boston311Model:
         data = self.load_data( 'predict' )
         data = self.enhance_data( data, 'predict')
         clean_data = self.clean_data_for_prediction( data )
-        X_predict, y_predict = self.split_data( clean_data )
-        y_predict = self.model.predict(X_predict)
-        data['survival_prediction'] = y_predict
-        data['survival_timedelta'] = data['survival_prediction'].apply(lambda x: pd.Timedelta(seconds=(x*3600)))
-        data['closed_dt_prediction'] = data['open_dt'] + data['survival_timedelta']
 
-        return data
+        if self.model_type == 'linear' or self.model_type == 'logistic' :
+            X_predict, y_predict = self.split_data( clean_data )
+            y_predict = self.model.predict(X_predict)
+            data['survival_prediction'] = y_predict
+            data['survival_timedelta'] = data['survival_prediction'].apply(lambda x: pd.Timedelta(seconds=(x*3600)))
+            data['closed_dt_prediction'] = data['open_dt'] + data['survival_timedelta']
+            return data
+        elif self.model_type == "cox" :
+            risks = self.model.predict_partial_hazard(clean_data) 
+            survival_function = self.model.predict_survival_function(clean_data)
+            median_survival_times = self.model.predict_median(clean_data)
+            return risks, survival_function, median_survival_times
+
+
+
 
     '''
     split_data( data ) - this takes data that is ready for training and splits it into an id series, a feature matrix, and a label series
@@ -261,12 +270,14 @@ class Boston311Model:
     '''
     train_model( X, y ) - this trains the model and returns the model object
     '''
-    def train_model( self, X, y ) :
+    def train_model( self, X, y=[] ) :
         if self.model_type == 'logistic' :
             self.model = self.train_logistic_model( X, y )
 
         if self.model_type == 'linear' :
             self.model = self.train_linear_model( X, y )
+        if self.model_type == 'cox' :
+            self.model = self.train_cox_model(X)
     
     def train_logistic_model ( self, logistic_X, logistic_y ) :
         start_time = datetime.now()
@@ -332,13 +343,42 @@ class Boston311Model:
         print("Training took {}".format(total_time))
 
         return model
+    
+    def train_cox_model(self, data):
+        start_time = datetime.now()
+        print("Starting Training at {}".format(start_time))
+
+        # Split the data into a training set, a validation set, and a test set
+        df_temp, test_df = train_test_split(data, test_size=0.2, random_state=42)
+        train_df, val_df = train_test_split(df_temp, test_size=0.25, random_state=42)
+
+        # Fit the Cox proportional hazards model
+        model = CoxPHFitter()
+        model.fit(train_df, duration_col='survival_time_hours', event_col='event')
+
+        # Predict the risk on the validation set and evaluate
+        val_duration = val_df.pop('survival_time_hours')
+        val_event_observed = val_df.pop('event')
+        val_predictions = model.predict_partial_hazard(val_df)
+        c_index = concordance_index(val_duration, -val_predictions, val_event_observed)
+        print(f"Concordance Index on Validation Set: {c_index}")
+
+        end_time = datetime.now()
+        total_time = (end_time - start_time)
+        print("Ending Training at {}".format(end_time))
+        print("Training took {}".format(total_time))
+
+        return model
 
     def run_pipeline( self ) :
         data = self.load_data()
         data = self.enhance_data(data)
         data = self.clean_data(data)
-        X, y = self.split_data(data)
-        self.train_model( X, y )
+        if self.model_type == 'linear' or self.model_type == 'logistic' :
+            X, y = self.split_data(data)
+            self.train_model( X, y )
+        elif self.model_type == 'cox' :
+            self.train_model( data )
     
 
     def load_data_from_urls(self, *args) :
