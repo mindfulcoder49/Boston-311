@@ -9,6 +9,7 @@ from lifelines.utils import concordance_index
 import pandas as pd
 import numpy as np
 import json
+import pickle 
 
 
 class Boston311Model: 
@@ -34,7 +35,16 @@ class Boston311Model:
 
     def save(self, filepath):
         # Save keras model
-        self.model.save(filepath + '/keras_model.h5')
+        if self.model_type == "linear"  ;
+            self.model.save(filepath + '/linear_keras_model.h5')
+        if self.model_type == "logistic" ;
+            self.model.save(filepath + '/logistic_keras_model.h5')
+        if self.model_type == "cox" :
+            with open(filepath + '/cox_model.pkl', 'wb') as f:
+                pickle.dump(self.model, f)
+        if self.model_type == "tree" :
+            with open(filepath + '/decision_tree.pkl', 'wb') as f:
+                pickle.dump(self.model), f)
 
         # Save other properties
         with open(filepath + '/properties.json', 'w') as f:
@@ -47,12 +57,10 @@ class Boston311Model:
                 'model_type': self.model_type,
             }, f)
 
-    def load(self, filepath):
-        # Load keras model
-        self.model = keras.models.load_model(filepath + '/keras_model.h5')
+    def load(self, json_file, model_file):
 
         # Load other properties
-        with open(filepath + '/properties.json', 'r') as f:
+        with open(json_file, 'r') as f:
             properties = json.load(f)
             self.feature_columns = properties['feature_columns']
             self.feature_dict = properties['feature_dict']
@@ -61,6 +69,16 @@ class Boston311Model:
             self.scenario = properties['scenario']
             self.model_type = properties['model_type']
     
+        if self.model_type == "logistic" or self.model_type == "linear" :
+            self.model = keras.models.load_model(model_file)
+        if self.model_type == "cox" :
+            with open(model_file, 'rb') as f:
+                self.model = pickle.load(f)
+        if self.model_type == "tree" :
+            with open(model_file, 'rb') as f:
+                self.model = pickle.load(f)
+
+
     #load_data() - this will use the start_date and end_date. It will return a dataframe
     def load_data(self, train_or_predict='train') :
         start_date, end_date = None, None
