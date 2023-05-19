@@ -437,8 +437,9 @@ class Boston311Model:
 
         return model
 
-    def run_pipeline( self ) :
-        data = self.load_data()
+    def run_pipeline( self, data=None) :
+        if data == None :
+            data = self.load_data()
         data = self.enhance_data(data)
         data = self.clean_data(data)
         if self.model_type in ['linear','logistic','tree'] :
