@@ -439,7 +439,7 @@ class Boston311Model:
 
     def run_pipeline( self, data_original=None) :
         data = None
-        if data_original == None :
+        if data_original is None :
             data = self.load_data()
         else :
             data = data_original.copy()
