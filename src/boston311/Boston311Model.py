@@ -35,16 +35,16 @@ class Boston311Model:
 
     def save(self, filepath):
         # Save keras model
-        if self.model_type == "linear"  ;
+        if self.model_type == "linear"  :
             self.model.save(filepath + '/linear_keras_model.h5')
-        if self.model_type == "logistic" ;
+        if self.model_type == "logistic" :
             self.model.save(filepath + '/logistic_keras_model.h5')
         if self.model_type == "cox" :
             with open(filepath + '/cox_model.pkl', 'wb') as f:
                 pickle.dump(self.model, f)
         if self.model_type == "tree" :
             with open(filepath + '/decision_tree.pkl', 'wb') as f:
-                pickle.dump(self.model), f)
+                pickle.dump(self.model, f)
 
         # Save other properties
         with open(filepath + '/properties.json', 'w') as f:
