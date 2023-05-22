@@ -312,7 +312,7 @@ class Boston311Model:
             y = data['event']
         if self.model_type == 'lin_tree' :
             X = data.drop(['survival_time_hours', 'event'], axis=1)
-            bin_edges = [0, 1, 6, 12, 24, 48, 72, 96, 168, 336, 504, 672, 1344, 2688, 8736, 43680]
+            bin_edges = [0, 1, 6, 12, 24, 48, 72, 96, 168, 336, 504, 672, 1344, 2688, 8736, 43680, 1314870]
             y = pd.cut(data['survival_time_hours'], bins=bin_edges)
             
         
