@@ -42,8 +42,11 @@ class Boston311Model:
         if self.model_type == "cox" :
             with open(filepath + '/cox_model.pkl', 'wb') as f:
                 pickle.dump(self.model, f)
-        if self.model_type == "tree" :
-            with open(filepath + '/decision_tree.pkl', 'wb') as f:
+        if self.model_type == 'log_tree' :
+            with open(filepath + '/log_decision_tree.pkl', 'wb') as f:
+                pickle.dump(self.model, f)
+        if self.model_type == 'lin_tree' :
+            with open(filepath + '/lin_decision_tree.pkl', 'wb') as f:
                 pickle.dump(self.model, f)
 
         # Save other properties
@@ -74,7 +77,10 @@ class Boston311Model:
         if self.model_type == "cox" :
             with open(model_file, 'rb') as f:
                 self.model = pickle.load(f)
-        if self.model_type == "tree" :
+        if self.model_type == 'log_tree' :
+            with open(model_file, 'rb') as f:
+                self.model = pickle.load(f)
+        if self.model_type == 'lin_tree' :
             with open(model_file, 'rb') as f:
                 self.model = pickle.load(f)
 
@@ -268,10 +274,15 @@ class Boston311Model:
             y_predict = self.model.predict(X_predict)
             data['event_prediction'] = y_predict
             return data
-        elif self.model_type == 'tree' :
+        elif self.model_type == 'log_tree' :
             X_predict, y_predict = self.split_data( clean_data )
             y_predict = self.model.predict(X_predict)
             data['event_prediction'] = y_predict
+            return data
+        elif self.model_type == 'lin_tree' :
+            X_predict, y_predict = self.split_data( clean_data )
+            y_predict = self.model.predict(X_predict)
+            data['survival_prediction'] = y_predict
             return data
         elif self.model_type == "cox" :
             risks = self.model.predict_partial_hazard(clean_data) 
@@ -296,9 +307,14 @@ class Boston311Model:
             X = data.drop(['survival_time_hours', 'event'], axis=1) 
             y = data['survival_time_hours']
 
-        if self.model_type == 'tree' :
+        if self.model_type == 'log_tree' :
             X = data.drop(['survival_time_hours', 'event'], axis=1) 
             y = data['event']
+        if self.model_type == 'lin_tree' :
+            X = data.drop(['survival_time_hours', 'event'], axis=1)
+            bin_edges = [0, 1, 6, 12, 24, 48, 72, 96, 168, 336, 504, 672, 1344, 2688, 8736, 43680]
+            y = pd.cut(data['event'], bins=bin_edges)
+            
         
         return X, y 
 
@@ -313,7 +329,9 @@ class Boston311Model:
             self.model = self.train_linear_model( X, y )
         if self.model_type == 'cox' :
             self.model = self.train_cox_model(X)
-        if self.model_type == 'tree' :
+        if self.model_type == 'log_tree' :
+            self.model = self.train_tree_model( X, y )
+        if self.model_type == 'lin_tree' :
             self.model = self.train_tree_model( X, y )
             
     
@@ -414,7 +432,6 @@ class Boston311Model:
 
         # Split into training and testing sets
         X_train, X_test, y_train, y_test = train_test_split(tree_X, tree_y, test_size=0.2, random_state=42)
-        X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
 
         # Initialize the model
         model = DecisionTreeClassifier(random_state=42)
@@ -422,13 +439,11 @@ class Boston311Model:
         # Fit the model
         model.fit(X_train, y_train)
 
-        # Predict the validation set results
-        y_val_pred = model.predict(X_val)
+        y_test_pred = model.predict(X_test)
 
-        # Calculate the accuracy
-        accuracy = accuracy_score(y_val, y_val_pred)
-
-        print('Validation accuracy:', accuracy)
+        # Calculate the accuracy on the testing set
+        test_accuracy = accuracy_score(y_test, y_test_pred)
+        print('Testing accuracy:', test_accuracy)
 
         end_time = datetime.now()
         total_time = (end_time - start_time)
@@ -445,7 +460,7 @@ class Boston311Model:
             data = data_original.copy()
         data = self.enhance_data(data)
         data = self.clean_data(data)
-        if self.model_type in ['linear','logistic','tree'] :
+        if self.model_type in ['linear','logistic','log_tree','lin_tree'] :
             X, y = self.split_data(data)
             self.train_model( X, y )
         elif self.model_type == 'cox' :
