@@ -313,7 +313,8 @@ class Boston311Model:
         if self.model_type == 'lin_tree' :
             X = data.drop(['survival_time_hours', 'event'], axis=1)
             bin_edges = [0, 1, 6, 12, 24, 48, 72, 96, 168, 336, 504, 672, 1344, 2688, 8736, 43680, 1314870]
-            y = pd.cut(data['survival_time_hours'], bins=bin_edges)
+            bin_labels = ["0-1 hour","1-6 hours","6-12 hours","12-24 hours", "1-2 days","2-3 days","3-4 days", "4-7 days","1-2 weeks","2-3 weeks", "3-4 weeks","1 - 2 month","2 - 4 months", "4 months - 1 year", "1 - 5 years", "5 - 15 years"]
+            y = pd.cut(data['survival_time_hours'], bins=bin_edges, label=bin_labels)
             
         
         return X, y 
