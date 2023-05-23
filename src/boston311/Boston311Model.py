@@ -1,16 +1,9 @@
-from tensorflow import keras
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, f1_score
-from sklearn.preprocessing import StandardScaler
-from sklearn.tree import DecisionTreeClassifier
-from datetime import datetime
-from lifelines import CoxPHFitter
-from lifelines.utils import concordance_index
 import pandas as pd
 import numpy as np
 import json
-import pickle 
 
+
+#refactor code as separate classes for each model type  - linear, logistic, cox, decision tree
 
 class Boston311Model: 
     
@@ -30,9 +23,10 @@ class Boston311Model:
         self.train_date_range = kwargs.get('train_date_range', {'start':'2010-12-31', 'end':'2030-01-01'})
         self.predict_date_range = kwargs.get('predict_date_range', {'start':'', 'end':''})
         self.scenario = kwargs.get('scenario', {})
-        self.model_type = kwargs.get('model_type', 'logistic')
+        #self.model_type = kwargs.get('model_type', 'logistic')
 
 
+    '''
     def save(self, filepath):
         # Save keras model
         if self.model_type == "linear"  :
@@ -57,9 +51,21 @@ class Boston311Model:
                 'train_date_range': self.train_date_range,
                 'predict_date_range': self.predict_date_range,
                 'scenario': self.scenario,
-                'model_type': self.model_type,
+            }, f)
+    '''
+
+    def save_properties(self, filepath, properties_file):
+        # Save other properties
+        with open(filepath + '/' + properties_file + '.json', 'w') as f:
+            json.dump({
+                'feature_columns': self.feature_columns,
+                'feature_dict': self.feature_dict,
+                'train_date_range': self.train_date_range,
+                'predict_date_range': self.predict_date_range,
+                'scenario': self.scenario,
             }, f)
 
+    '''
     def load(self, json_file, model_file):
 
         # Load other properties
@@ -83,6 +89,17 @@ class Boston311Model:
         if self.model_type == 'lin_tree' :
             with open(model_file, 'rb') as f:
                 self.model = pickle.load(f)
+    '''
+
+    def load_properties(self, json_file) :
+        # Load other properties
+        with open(json_file, 'r') as f:
+            properties = json.load(f)
+            self.feature_columns = properties['feature_columns']
+            self.feature_dict = properties['feature_dict']
+            self.train_date_range = properties['train_date_range']
+            self.predict_date_range = properties['predict_date_range']
+            self.scenario = properties['scenario']
 
 
     #load_data() - this will use the start_date and end_date. It will return a dataframe
@@ -129,10 +146,6 @@ class Boston311Model:
                   for column, column_values in value.items() :
                       data = data[data[column].isin(column_values)]
 
-        if self.model_type == 'linear' and train_or_predict == 'train' and 'survivalTimeFill' not in self.scenario :
-            #drop open cases
-            data = data[(data['event'] == 1)]
-
         return data
     
     '''
@@ -159,8 +172,8 @@ class Boston311Model:
             e.g. 2023-05-14
         
     '''
-    def clean_data(self, data) :
-        
+    def apply_scenario(self, data) :
+
         for key, value in self.scenario.items() :
             if key == 'dropColumnValues' :
                 for column, column_values in value.items() :
@@ -186,8 +199,10 @@ class Boston311Model:
                 data.loc[mask, 'survival_time'] = date - data.loc[mask, 'open_dt']
                 data.loc[mask, 'survival_time_hours'] = data.loc[mask, 'survival_time'].apply(lambda x: x.total_seconds() / 3600)
 
-        
-        
+        return data
+
+    def clean_data(self, data) :
+
         #get a list of all columns not in feature_columns or our two labels
         cols_to_drop = data.columns.difference(self.feature_columns + ['event', 'survival_time_hours'])
 
@@ -257,6 +272,7 @@ class Boston311Model:
     '''
     predict() - this will load the data based on the predict_date_range, call clean_data_for_prediction, call split data, use the model to predict the label, then use the id series to join the predictions with the original data, returning a data frame.
     '''
+    '''
     def predict( self ) :
         data = self.load_data( 'predict' )
         data = self.enhance_data( data, 'predict')
@@ -289,12 +305,12 @@ class Boston311Model:
             survival_function = self.model.predict_survival_function(clean_data)
             median_survival_times = self.model.predict_median(clean_data)
             return risks, survival_function, median_survival_times
-
-
-
+        
+        '''
 
     '''
     split_data( data ) - this takes data that is ready for training and splits it into an id series, a feature matrix, and a label series
+    '''
     '''
     def split_data(self, data) :
 
@@ -318,9 +334,11 @@ class Boston311Model:
             
         
         return X, y 
+    '''
 
     '''
     train_model( X, y ) - this trains the model and returns the model object
+    '''
     '''
     def train_model( self, X, y=[] ) :
         if self.model_type == 'logistic' :
@@ -334,8 +352,9 @@ class Boston311Model:
             self.model = self.train_tree_model( X, y )
         if self.model_type == 'lin_tree' :
             self.model = self.train_tree_model( X, y )
+    '''
             
-    
+    '''
     def train_logistic_model ( self, logistic_X, logistic_y ) :
         start_time = datetime.now()
         print("Starting Training at {}".format(start_time))
@@ -453,6 +472,7 @@ class Boston311Model:
 
         return model
 
+    
     def run_pipeline( self, data_original=None) :
         data = None
         if data_original is None :
@@ -460,14 +480,15 @@ class Boston311Model:
         else :
             data = data_original.copy()
         data = self.enhance_data(data)
+        data = self.apply_scenario(data)
         data = self.clean_data(data)
         if self.model_type in ['linear','logistic','log_tree','lin_tree'] :
             X, y = self.split_data(data)
             self.train_model( X, y )
         elif self.model_type == 'cox' :
             self.train_model( data )
+    '''
     
-
     def load_data_from_urls(self, *args) :
         url_2023 = "https://data.boston.gov/dataset/8048697b-ad64-4bfc-b090-ee00169f2323/resource/e6013a93-1321-4f2a-bf91-8d8a02f1e62f/download/tmpmbmp9j6w.csv"
         url_2022 = "https://data.boston.gov/dataset/8048697b-ad64-4bfc-b090-ee00169f2323/resource/81a7b022-f8fc-4da5-80e4-b160058ca207/download/tmph4izx_fb.csv"
