@@ -1,7 +1,7 @@
 import setuptools
 setuptools.setup(
     name='boston311',
-    version='0.1',
+    version='0.1.0',
     install_requires=[
         'numpy',
         'pandas',
