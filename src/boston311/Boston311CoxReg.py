@@ -7,12 +7,6 @@ from .Boston311Model import Boston311Model
 
 class Boston311CoxReg(Boston311Model):
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
     def save(self, filepath, model_file, properties_file):
                 
         with open(filepath + '/' + model_file + '.pkl', 'wb') as f:
@@ -28,24 +22,6 @@ class Boston311CoxReg(Boston311Model):
         
         with open(model_file, 'rb') as f:
             self.model = pickle.load(f)
-        
-    def load_data(self, train_or_predict='train') :
-        return super().load_data(train_or_predict)
-    
-    def enhance_data(self, data, train_or_predict='train'):
-        return super().enhance_data(data, train_or_predict)
-
-    def apply_scenario(self, data):
-        return super().apply_scenario(data)
-    
-    def clean_data(self, data):
-        return super().clean_data(data)
-    
-    def clean_data_for_prediction(self, data):
-        return super().clean_data_for_prediction(data)
-    
-    def one_hot_encode_with_feature_dict(self, data):
-        return super().one_hot_encode_with_feature_dict(data)
     
     def predict( self ) :
         data = self.load_data( 'predict' )
