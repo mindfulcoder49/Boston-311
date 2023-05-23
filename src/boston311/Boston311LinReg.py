@@ -29,7 +29,7 @@ class Boston311LinReg(Boston311Model):
         return super().load_data(train_or_predict)
     
     def enhance_data(self, data, train_or_predict='train'):
-        data = super().enhance_data(data, train_or_predict)
+        return super().enhance_data(data, train_or_predict)
 
     def apply_scenario(self, data):
         return super().apply_scenario(data)
