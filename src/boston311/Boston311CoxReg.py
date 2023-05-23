@@ -3,9 +3,9 @@ from datetime import datetime
 from lifelines import CoxPHFitter
 from lifelines.utils import concordance_index
 import pickle 
-import Boston311Model
+from .Boston311Model import Boston311Model
 
-class Boston311CoxReg(Boston311Model.Boston311Model):
+class Boston311CoxReg(Boston311Model):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

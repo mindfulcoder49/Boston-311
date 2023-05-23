@@ -3,10 +3,9 @@ from sklearn.metrics import accuracy_score, f1_score
 from sklearn.tree import DecisionTreeClassifier
 from datetime import datetime
 import pickle 
+from .Boston311Model import Boston311Model
 
-import Boston311Model
-
-class Boston311EventDecTree(Boston311Model.Boston311Model):
+class Boston311EventDecTree(Boston311Model):
 
 
     def __init__(self, **kwargs):

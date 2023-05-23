@@ -1,17 +1,12 @@
-from tensorflow import keras
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, f1_score
-from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeClassifier
 from datetime import datetime
 import pandas as pd
-import numpy as np
-import json
 import pickle 
+from .Boston311Model import Boston311Model
 
-import Boston311Model
-
-class Boston311SurvDecTree(Boston311Model.Boston311Model):
+class Boston311SurvDecTree(Boston311Model):
 
 
     def __init__(self, **kwargs):

@@ -1,9 +1,9 @@
 from tensorflow import keras
 from sklearn.model_selection import train_test_split
 from datetime import datetime
-import Boston311Model
+from .Boston311Model import Boston311Model
 
-class Boston311LogReg(Boston311Model.Boston311Model):
+class Boston311LogReg(Boston311Model):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
