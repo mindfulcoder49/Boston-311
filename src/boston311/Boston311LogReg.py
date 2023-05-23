@@ -5,8 +5,10 @@ from .Boston311Model import Boston311Model
 
 class Boston311LogReg(Boston311Model):
 
+    '''
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+    '''
 
     def save(self, filepath, model_file, properties_file):
         # Save keras model
@@ -22,6 +24,7 @@ class Boston311LogReg(Boston311Model):
     
         self.model = keras.models.load_model(model_file)
 
+    '''
     def load_data(self, train_or_predict='train') :
         return super().load_data(train_or_predict)
     
@@ -39,6 +42,8 @@ class Boston311LogReg(Boston311Model):
     
     def one_hot_encode_with_feature_dict(self, data):
         return super().one_hot_encode_with_feature_dict(data)
+
+    '''
     
     def predict( self ) :
         data = self.load_data( 'predict' )
