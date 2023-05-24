@@ -1,6 +1,9 @@
 import pandas as pd
 import numpy as np
 import json
+import requests
+from bs4 import BeautifulSoup
+from datetime import datetime
 
 
 #refactor code as separate classes for each model type  - linear, logistic, cox, decision tree
@@ -23,6 +26,7 @@ class Boston311Model:
         self.train_date_range = kwargs.get('train_date_range', {'start':'2010-12-31', 'end':'2030-01-01'})
         self.predict_date_range = kwargs.get('predict_date_range', {'start':'', 'end':''})
         self.scenario = kwargs.get('scenario', {})
+        self.files_dict = kwargs.get('files_dict', None)
         #self.model_type = kwargs.get('model_type', 'logistic')
 
 
@@ -207,21 +211,25 @@ class Boston311Model:
 
 
         # Get a list of all CSV files in the directory
-        files_dict = {
-        '2023': url_2023,
-        '2022': url_2022,
-        '2021': url_2021,
-        '2020': url_2020,
-        '2019': url_2019,
-        '2018': url_2018,
-        '2017': url_2017,
-        '2016': url_2016,
-        '2015': url_2015,
-        '2014': url_2014,
-        '2013': url_2013,
-        '2012': url_2012,
-        '2011': url_2011
-        }
+
+        if self.files_dict is None :
+            files_dict = {
+            '2023': url_2023,
+            '2022': url_2022,
+            '2021': url_2021,
+            '2020': url_2020,
+            '2019': url_2019,
+            '2018': url_2018,
+            '2017': url_2017,
+            '2016': url_2016,
+            '2015': url_2015,
+            '2014': url_2014,
+            '2013': url_2013,
+            '2012': url_2012,
+            '2011': url_2011
+            }
+        else :
+            files_dict = self.files_dict
 
         all_files = []
         if args != [] :
@@ -273,3 +281,32 @@ class Boston311Model:
         df_all = pd.concat(dfs, ignore_index=True)
 
         return df_all        
+    
+
+    def get311URLs() :
+
+        # specify the URL of the page
+        url = "https://data.boston.gov/dataset/311-service-requests"
+
+        # send a GET request to the URL
+        response = requests.get(url)
+
+        # parse the HTML content of the page with BeautifulSoup
+        soup = BeautifulSoup(response.content, 'html.parser')
+
+        # Get the current date and time
+        now = datetime.now()
+
+        # Extract the year and print it
+        current_year = now.year
+
+        URL_dict = {}
+
+        # find all the anchor tags in the HTML
+        # and print out the href attribute, which is the URL
+        for link in soup.find_all('a'):
+            url = link.get('href')
+            if url.endswith('.csv'):
+                URL_dict[str(current_year)] = url
+                current_year = current_year - 1 
+        return URL_dict
