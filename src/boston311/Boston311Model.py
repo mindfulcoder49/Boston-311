@@ -85,8 +85,8 @@ class Boston311Model:
         data.loc[mask, 'survival_time_hours'] = data.loc[mask, 'survival_time'].apply(lambda x: x.total_seconds() / 3600)
 
         if train_or_predict == 'predict' :
-            #drop closed cases
-            data = data[(data['event'] == 0)]
+            #drop closed cases - edit: Actually it would be better to keep all to see if we correctly identify the ones that are closed
+            #data = data[(data['event'] == 0)]
 
             for key, value in self.scenario.items() :
               if key == 'dropColumnValues' :
