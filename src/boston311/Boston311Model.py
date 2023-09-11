@@ -28,6 +28,9 @@ class Boston311Model:
         self.scenario = kwargs.get('scenario', {})
         self.files_dict = kwargs.get('files_dict', None)
         #self.model_type = kwargs.get('model_type', 'logistic')
+        #define self.model_type as the class name of self 
+        self.model_type = self.__class__.__name__
+
 
 
     def save_properties(self, filepath, properties_file):
@@ -39,6 +42,7 @@ class Boston311Model:
                 'train_date_range': self.train_date_range,
                 'predict_date_range': self.predict_date_range,
                 'scenario': self.scenario,
+                'model_type': self.model_type,
             }, f)
 
     def load_properties(self, json_file) :
