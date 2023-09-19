@@ -5,3 +5,4 @@ lib/*
 db_config.py
 __pycache__
 *.csv
+*manifest.txt
