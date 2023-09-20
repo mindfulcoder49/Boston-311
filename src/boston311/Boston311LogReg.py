@@ -37,7 +37,10 @@ class Boston311LogReg(Boston311Model):
         return X, y 
         
     def train_model( self, X, y=[] ) :
-        self.model = self.train_logistic_model( X, y )
+        test_acc = 0
+        self.model, test_acc = self.train_logistic_model( X, y )
+        return test_acc
+
 
     def train_logistic_model ( self, logistic_X, logistic_y ) :
         start_time = datetime.now()
@@ -71,7 +74,7 @@ class Boston311LogReg(Boston311Model):
         print("Ending Training at {}".format(end_time))
         print("Training took {}".format(total_time))
 
-        return model
+        return model, test_acc
     
     def run_pipeline( self, data_original=None) :
         data = None
@@ -83,4 +86,5 @@ class Boston311LogReg(Boston311Model):
         data = self.apply_scenario(data)
         data = self.clean_data(data)
         X, y = self.split_data(data)
-        self.train_model( X, y )
+        test_acc = self.train_model( X, y )
+        return test_acc
