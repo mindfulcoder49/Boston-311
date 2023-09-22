@@ -3,6 +3,7 @@ pyproject.toml
 setup.py
 src/boston311/Boston311CoxReg.py
 src/boston311/Boston311EventDecTree.py
+src/boston311/Boston311KerasNLP.py
 src/boston311/Boston311LinReg.py
 src/boston311/Boston311LogReg.py
 src/boston311/Boston311Model.py
