@@ -27,6 +27,8 @@ class Boston311Model:
         self.predict_date_range = kwargs.get('predict_date_range', {'start':'', 'end':''})
         self.scenario = kwargs.get('scenario', {})
         self.files_dict = kwargs.get('files_dict', None)
+        #add add_columns which will be a dataframe to add to the data
+        self.add_columns = kwargs.get('add_columns', None)
         #self.model_type = kwargs.get('model_type', 'logistic')
         #define self.model_type as the class name of self 
         self.model_type = self.__class__.__name__

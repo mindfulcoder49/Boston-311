@@ -85,6 +85,12 @@ class Boston311LogReg(Boston311Model):
         data = self.enhance_data(data)
         data = self.apply_scenario(data)
         data = self.clean_data(data)
+        if self.add_columns is not None :
+            #check if it has a 'case'enquiry_id' column
+            if 'case_enquiry_id' in self.add_columns :
+                #join the dataframes on the 'case_enquiry_id' column
+                data = data.merge(self.add_columns['case_enquiry_id'], on='case_enquiry_id')
+
         X, y = self.split_data(data)
         test_acc = self.train_model( X, y )
         return test_acc
