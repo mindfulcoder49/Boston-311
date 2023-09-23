@@ -136,7 +136,8 @@ class Boston311Model:
     def clean_data(self, data) :
 
         #get a list of all columns not in feature_columns or our two labels
-        cols_to_drop = data.columns.difference(self.feature_columns + ['event', 'survival_time_hours'])
+        cols_to_drop = data.columns.difference(self.feature_columns + ['event', 'survival_time_hours','case_enquiry_id'])
+
 
         data = data.drop(columns=cols_to_drop, axis=1)
 
@@ -144,6 +145,7 @@ class Boston311Model:
             self.feature_dict[column] = data[column].unique().tolist()
         
         data = pd.get_dummies(data, columns=self.feature_columns)
+
 
         return data
 

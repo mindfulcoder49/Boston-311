@@ -60,6 +60,9 @@ class Boston311KerasNLP(Boston311Model):
     def split_data(self, data) :
 
         X = data.drop(['survival_time_hours', 'event'], axis=1)
+        #if X has a 'case_enquiry_id' column, drop it
+        if 'case_enquiry_id' in X.columns :
+            X = X.drop(['case_enquiry_id'], axis=1)
         bin_edges = [0, 24, 168, 672, 8736, 1314870]
         bin_labels = ["0-24 hours", "1-7 days","2-4 weeks","1-12 months","over a year"]
         y = pd.cut(data['survival_time_hours'], bins=bin_edges, labels=bin_labels)
