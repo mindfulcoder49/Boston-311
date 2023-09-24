@@ -6,12 +6,19 @@ import pickle
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.metrics import TopKCategoricalAccuracy
+from tensorflow.keras.layers import Dropout, BatchNormalization
+from tensorflow.keras.regularizers import l2
+from kerastuner.tuners import RandomSearch, Hyperband, BayesianOptimization
 from .Boston311Model import Boston311Model
 
 class Boston311KerasNLP(Boston311Model):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.best_hyperparameters = None
+        self.input_dim = None
 
     def save(self, filepath, model_file, properties_file):
                 
@@ -63,8 +70,19 @@ class Boston311KerasNLP(Boston311Model):
         #if X has a 'case_enquiry_id' column, drop it
         if 'case_enquiry_id' in X.columns :
             X = X.drop(['case_enquiry_id'], axis=1)
-        bin_edges = [0, 24, 168, 672, 8736, 1314870]
-        bin_labels = ["0-24 hours", "1-7 days","2-4 weeks","1-12 months","over a year"]
+        bin_edges = [0, 12, 24, 72, 168, 336, 672, 1344, 2688, 9999999]
+        bin_labels = [
+            "0-12 hours",      # Less than half a day
+            "12-24 hours",     # Half to one day
+            "1-3 days",        # One to three days
+            "4-7 days",        # Four to seven days
+            "1-2 weeks",       # One to two weeks
+            "2-4 weeks",       # Two to four weeks
+            "1-2 months",      # One to two months
+            "2-4 months",      # Two to four months
+            "4+ months"        # More than four months
+        ]
+
         y = pd.cut(data['survival_time_hours'], bins=bin_edges, labels=bin_labels)
             
         
@@ -82,24 +100,44 @@ class Boston311KerasNLP(Boston311Model):
         # Split into training and testing sets
         X_train, X_test, y_train, y_test = train_test_split(tree_X, tree_y, test_size=0.2, random_state=42)
 
-        # Initialize the model
-        model = Sequential()
-        model.add(Dense(64, input_dim=X_train.shape[1], activation='relu'))
-        model.add(Dense(32, activation='relu'))
-        model.add(Dense(5, activation='softmax'))
+        if self.best_hyperparameters is not None:
+            model = build_model(X_train.shape[1], best_hyperparameters)
+        else:
+            model = Sequential()
+            model.add(Dense(256, input_dim=X_train.shape[1], activation='relu', kernel_regularizer=l2(0.001)))
+            model.add(BatchNormalization())
+            
+            model.add(Dense(128, activation='relu', kernel_regularizer=l2(0.001)))
+            model.add(BatchNormalization())
+            
+            model.add(Dense(64, activation='relu', kernel_regularizer=l2(0.001)))
+            model.add(BatchNormalization())
+            
+            model.add(Dense(32, activation='relu', kernel_regularizer=l2(0.001)))
+            model.add(BatchNormalization())
+            
+            model.add(Dense(9, activation='softmax'))
+
+
+        # Initialize the Top-2 accuracy metric
+        top2_acc = TopKCategoricalAccuracy(k=2)
 
         # Compile the model
-        optimizer = Adam(lr=0.001)
-        model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+        optimizer = Adam(learning_rate=0.001)
+        model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy', top2_acc])
+
+
+        #Add Early Stopping
+        early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
 
         # Fit the model
         y_train = pd.get_dummies(y_train)
         y_test = pd.get_dummies(y_test)
-        model.fit(X_train, y_train, epochs=100, batch_size=32, validation_data=(X_test, y_test))
+        model.fit(X_train, y_train, epochs=100, batch_size=32, validation_data=(X_test, y_test), callbacks=[early_stopping])
 
         # Evaluate the model
-        test_loss, test_accuracy = model.evaluate(X_test, y_test)
-        print('Testing accuracy:', test_accuracy)
+        test_loss, test_accuracy, top2_accuracy = model.evaluate(X_test, y_test)
+        print('Testing accuracy:', test_accuracy, '\nTop-2 accuracy:', top2_accuracy, '\nTest loss:', test_loss)
 
         end_time = datetime.now()
         total_time = (end_time - start_time)
@@ -120,3 +158,50 @@ class Boston311KerasNLP(Boston311Model):
         X, y = self.split_data(data)
         test_accuracy = self.train_model( X, y )
         return test_accuracy
+    
+    def tune_model( self, X_train, y_train, model_dir, verboseLevel=1):
+        print(type(X_train), X_train.shape)
+        print(type(y_train), y_train.shape)
+        y_train = pd.get_dummies(y_train)
+        print(type(y_train), y_train.shape)
+
+        self.input_dim = X_train.shape[1]
+        tuner = RandomSearch(
+            hypermodel=self.build_model,
+            objective='val_accuracy',
+            max_trials=80,
+            executions_per_trial=1,
+            directory=model_dir,
+            project_name='keras_tuning',
+            overwrite=True
+        )
+
+        tuner.search(X_train, y_train,
+                    epochs=5,
+                    validation_split=0.2,
+                    verbose=verboseLevel)
+        
+        best_model = tuner.get_best_models(num_models=1)[0]
+        best_hyperparameters = tuner.get_best_hyperparameters(num_trials=1)[0]
+        
+        return best_model, best_hyperparameters
+
+    def build_model( self, hp):
+        model = Sequential()
+        model.add(Dense(256, input_dim=self.input_dim, activation='relu', kernel_regularizer=l2(0.001)))
+        
+        for i in range(hp.Int('num_layers', 2, 4)):
+            units = hp.Choice(f'units_{i}', [32, 64, 128])
+            model.add(Dense(units, activation='relu', kernel_regularizer=l2(0.001)))
+            
+            if hp.Choice(f'batch_normalization_{i}', [True, False]):
+                model.add(BatchNormalization())
+                
+        model.add(Dense(9, activation='softmax'))
+        
+        top2_acc = TopKCategoricalAccuracy(k=2)
+        optimizer = Adam(learning_rate=hp.Float('learning_rate', min_value=1e-4, max_value=1e-2, sampling='LOG'))
+        
+        model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy', top2_acc])
+        
+        return model
