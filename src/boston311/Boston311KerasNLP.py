@@ -10,6 +10,7 @@ from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.metrics import TopKCategoricalAccuracy
 from tensorflow.keras.layers import Dropout, BatchNormalization
 from tensorflow.keras.regularizers import l2
+from tensorflow import keras
 from kerastuner.tuners import RandomSearch, Hyperband, BayesianOptimization
 from .Boston311Model import Boston311Model
 
@@ -20,11 +21,11 @@ class Boston311KerasNLP(Boston311Model):
         self.best_hyperparameters = None
         self.input_dim = None
 
+
     def save(self, filepath, model_file, properties_file):
-                
-        with open(filepath + '/' + model_file + '.pkl', 'wb') as f:
-            pickle.dump(self.model, f)
-       
+        # Save keras model
+        self.model.save(filepath + '/' + model_file + '.h5')
+        
         # Save other properties
         super().save_properties(filepath, properties_file)
 
@@ -32,9 +33,8 @@ class Boston311KerasNLP(Boston311Model):
 
         # Load other properties
         super().load_properties(json_file)
-        
-        with open(model_file, 'rb') as f:
-            self.model = pickle.load(f)
+    
+        self.model = keras.models.load_model(model_file)
 
     def load_data(self, train_or_predict='train') :
         return super().load_data(train_or_predict)
@@ -101,7 +101,7 @@ class Boston311KerasNLP(Boston311Model):
         X_train, X_test, y_train, y_test = train_test_split(tree_X, tree_y, test_size=0.2, random_state=42)
 
         if self.best_hyperparameters is not None:
-            model = build_model(X_train.shape[1], best_hyperparameters)
+            model = self.build_model(X_train.shape[1], self.best_hyperparameters)
         else:
             model = Sequential()
             model.add(Dense(256, input_dim=X_train.shape[1], activation='relu', kernel_regularizer=l2(0.001)))
@@ -166,19 +166,21 @@ class Boston311KerasNLP(Boston311Model):
         print(type(y_train), y_train.shape)
 
         self.input_dim = X_train.shape[1]
-        tuner = RandomSearch(
+        tuner = BayesianOptimization(
             hypermodel=self.build_model,
             objective='val_accuracy',
-            max_trials=80,
-            executions_per_trial=1,
+            max_trials=300,
+            num_initial_points=10,
             directory=model_dir,
             project_name='keras_tuning',
             overwrite=True
         )
 
-        tuner.search(X_train, y_train,
-                    epochs=5,
-                    validation_split=0.2,
+        X_train_split, X_val_split, y_train_split, y_val_split = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
+
+        tuner.search(X_train_split, y_train_split,
+                    epochs=10,
+                    validation_data=(X_val_split, y_val_split),
                     verbose=verboseLevel)
         
         best_model = tuner.get_best_models(num_models=1)[0]
@@ -188,19 +190,23 @@ class Boston311KerasNLP(Boston311Model):
 
     def build_model( self, hp):
         model = Sequential()
-        model.add(Dense(256, input_dim=self.input_dim, activation='relu', kernel_regularizer=l2(0.001)))
-        
-        for i in range(hp.Int('num_layers', 2, 4)):
-            units = hp.Choice(f'units_{i}', [32, 64, 128])
-            model.add(Dense(units, activation='relu', kernel_regularizer=l2(0.001)))
-            
-            if hp.Choice(f'batch_normalization_{i}', [True, False]):
-                model.add(BatchNormalization())
+        start_nodes_choice = hp.Choice(f'start_nodes', [128, 256, 512, 1024])
+        end_nodes_choice = hp.Choice(f'end_nodes', [16, 32, 64])
+        model.add(Dense(start_nodes_choice, input_dim=self.input_dim, activation='relu', kernel_regularizer=l2(hp.Float('l2_0', min_value=1e-5, max_value=1e-1, sampling='LOG'))))
+        #if hp.Choice(f'batch_normalization', [True, False]):
+        #    model.add(BatchNormalization())
+
+        #create a loop to add layers of half the size of the previous layer until the layer size is end_nodes_choice:
+        while start_nodes_choice > end_nodes_choice: 
+            start_nodes_choice = start_nodes_choice // 2 
+            model.add(Dense(start_nodes_choice, activation='relu', kernel_regularizer=l2(hp.Float('l2_0', min_value=1e-5, max_value=1e-1, sampling='LOG'))))
+        #    if hp.Choice(f'batch_normalization', [True, False]):
+        #        model.add(BatchNormalization())
                 
         model.add(Dense(9, activation='softmax'))
         
         top2_acc = TopKCategoricalAccuracy(k=2)
-        optimizer = Adam(learning_rate=hp.Float('learning_rate', min_value=1e-4, max_value=1e-2, sampling='LOG'))
+        optimizer = Adam(learning_rate=hp.Float('learning_rate', min_value=1e-5, max_value=1e-1, sampling='LOG'))
         
         model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy', top2_acc])
         
