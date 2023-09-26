@@ -12,6 +12,7 @@ from tensorflow.keras.layers import Dropout, BatchNormalization
 from tensorflow.keras.regularizers import l2
 from tensorflow import keras
 from kerastuner.tuners import RandomSearch, Hyperband, BayesianOptimization
+from kerastuner import HyperParameters
 from .Boston311Model import Boston311Model
 
 class Boston311KerasNLP(Boston311Model):
@@ -20,6 +21,7 @@ class Boston311KerasNLP(Boston311Model):
         super().__init__(**kwargs)
         self.best_hyperparameters = None
         self.input_dim = None
+        self.batch_size = 32
 
 
     def save(self, filepath, model_file, properties_file):
@@ -97,43 +99,42 @@ class Boston311KerasNLP(Boston311Model):
         start_time = datetime.now()
         print("Starting Training at {}".format(start_time))
 
+        self.input_dim = tree_X.shape[1]
+
         # Split into training and testing sets
         X_train, X_test, y_train, y_test = train_test_split(tree_X, tree_y, test_size=0.2, random_state=42)
 
         if self.best_hyperparameters is not None:
-            model = self.build_model(X_train.shape[1], self.best_hyperparameters)
+            model = self.build_model(self.best_hyperparameters)
         else:
-            model = Sequential()
-            model.add(Dense(256, input_dim=X_train.shape[1], activation='relu', kernel_regularizer=l2(0.001)))
-            model.add(BatchNormalization())
-            
-            model.add(Dense(128, activation='relu', kernel_regularizer=l2(0.001)))
-            model.add(BatchNormalization())
-            
-            model.add(Dense(64, activation='relu', kernel_regularizer=l2(0.001)))
-            model.add(BatchNormalization())
-            
-            model.add(Dense(32, activation='relu', kernel_regularizer=l2(0.001)))
-            model.add(BatchNormalization())
-            
-            model.add(Dense(9, activation='softmax'))
+            hp = HyperParameters()
+            hp.Fixed('start_nodes', value=1024)
+            hp.Fixed('end_nodes', value=64)
+            hp.Fixed('l2_0', value=0.00001)
+            hp.Fixed('learning_rate', value=7.5842e-05)
 
+            # Build the model with the specific hyperparameters
+            model = self.build_model(hp)
 
-        # Initialize the Top-2 accuracy metric
-        top2_acc = TopKCategoricalAccuracy(k=2)
-
-        # Compile the model
-        optimizer = Adam(learning_rate=0.001)
-        model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy', top2_acc])
-
+        print(model.summary())
 
         #Add Early Stopping
         early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
 
         # Fit the model
         y_train = pd.get_dummies(y_train)
+
+        #print debug
+        print(type(y_train), y_train.shape)
+
         y_test = pd.get_dummies(y_test)
-        model.fit(X_train, y_train, epochs=100, batch_size=32, validation_data=(X_test, y_test), callbacks=[early_stopping])
+
+        #print debug
+        print(type(y_test), y_test.shape)
+
+        print("run fit\n")
+
+        model.fit(X_train, y_train, epochs=100, batch_size=self.batch_size, validation_data=(X_test, y_test), callbacks=[early_stopping])
 
         # Evaluate the model
         test_loss, test_accuracy, top2_accuracy = model.evaluate(X_test, y_test)
