@@ -156,7 +156,7 @@ class Boston311Model:
 
     def clean_data_for_prediction( self, data ) :
         
-        cols_to_drop = data.columns.difference(self.feature_columns + ['event', 'survival_time_hours'])
+        cols_to_drop = data.columns.difference(self.feature_columns + ['event', 'survival_time_hours', 'case_enquiry_id'])
 
         data = data.drop(columns=cols_to_drop, axis=1)
 
