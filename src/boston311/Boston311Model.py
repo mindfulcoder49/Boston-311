@@ -156,7 +156,7 @@ class Boston311Model:
 
     def clean_data_for_prediction( self, data ) :
         
-        cols_to_drop = data.columns.difference(self.feature_columns + ['event', 'survival_time_hours', 'case_enquiry_id'])
+        cols_to_drop = data.columns.difference(self.feature_columns + ['case_enquiry_id'])
 
         data = data.drop(columns=cols_to_drop, axis=1)
 
@@ -168,6 +168,9 @@ class Boston311Model:
         
         # Loop through each column in the DataFrame
         for column in data.columns:
+            # Check if the column is case_enquiry_id and skip it
+            if column == 'case_enquiry_id':
+                continue
             # Get the list of allowed values for this column
             allowed = self.feature_dict.get(column, [])
             
