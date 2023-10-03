@@ -1,0 +1,1 @@
+{"feature_columns": ["type", "queue"], "feature_dict": {}, "train_date_range": {"start": "2022-01-01", "end": "2023-09-03"}, "predict_date_range": {"start": "2023-09-03", "end": "2023-10-03"}, "scenario": {"dropColumnValues": {"source": ["City Worker App", "Employee Generated"]}, "survivalTimeMin": 0, "survivalTimeFill": "2023-10-04"}, "model_type": "Boston311SurvDecTree"}
