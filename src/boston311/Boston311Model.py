@@ -59,7 +59,7 @@ class Boston311Model:
 
 
     #load_data() - this will use the start_date and end_date. It will return a dataframe
-    def load_data(self, train_or_predict='train') :
+    def load_data(self, data=None, train_or_predict='train') :
         start_date, end_date = None, None
         if train_or_predict == 'train' :
             start_date = pd.to_datetime(self.train_date_range['start'])
@@ -67,7 +67,8 @@ class Boston311Model:
         elif train_or_predict == 'predict' :
             start_date = pd.to_datetime(self.predict_date_range['start'])
             end_date = pd.to_datetime(self.predict_date_range['end'])
-        data = self.load_data_from_urls(range(start_date.year, end_date.year+1))
+        if data is None :
+            data = self.load_data_from_urls(range(start_date.year, end_date.year+1))
 
         data['open_dt'] = pd.to_datetime(data['open_dt'])
         data = data[(data['open_dt'] >= start_date) & (data['open_dt'] <= end_date)]

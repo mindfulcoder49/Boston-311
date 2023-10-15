@@ -38,8 +38,8 @@ class Boston311KerasNLP(Boston311Model):
     
         self.model = keras.models.load_model(model_file)
 
-    def load_data(self, train_or_predict='train') :
-        return super().load_data(train_or_predict)
+    def load_data(self, data=None, train_or_predict='train') :
+        return super().load_data(data, train_or_predict)
     
     def enhance_data(self, data, train_or_predict='train'):
         return super().enhance_data(data, train_or_predict)
@@ -66,36 +66,27 @@ class Boston311KerasNLP(Boston311Model):
         data['survival_prediction'] = y_predict
         return data
     
-    def split_data(self, data) :
+    def split_data(self, data, bin_labels=None, bin_edges=None) :
 
         X = data.drop(['survival_time_hours', 'event'], axis=1)
         #if X has a 'case_enquiry_id' column, drop it
         if 'case_enquiry_id' in X.columns :
             X = X.drop(['case_enquiry_id'], axis=1)
-        bin_edges = [0, 12, 24, 72, 168, 336, 672, 1344, 2688, 9999999]
-        bin_labels = [
-            "0-12 hours",      # Less than half a day
-            "12-24 hours",     # Half to one day
-            "1-3 days",        # One to three days
-            "4-7 days",        # Four to seven days
-            "1-2 weeks",       # One to two weeks
-            "2-4 weeks",       # Two to four weeks
-            "1-2 months",      # One to two months
-            "2-4 months",      # Two to four months
-            "4+ months"        # More than four months
-        ]
-
-        y = pd.cut(data['survival_time_hours'], bins=bin_edges, labels=bin_labels)
-            
+        
+        if bin_edges is None :
+            #keep y as survival_time_hours for regression
+            y = data['survival_time_hours']
+        else :
+            y = pd.cut(data['survival_time_hours'], bins=bin_edges, labels=bin_labels)
         
         return X, y 
         
-    def train_model( self, X, y=[] ) :
+    def train_model( self, X, y=[], start_nodes=128, end_nodes=64, final_layer_choice=9, final_activation_choice='softmax' ) :
         test_accuracy = 0
-        self.model, test_accuracy = self.train_keras_model( X, y )
+        self.model, test_accuracy = self.train_keras_model( X, y, start_nodes, end_nodes, final_layer_choice, final_activation_choice )
         return test_accuracy
 
-    def train_keras_model ( self, tree_X, tree_y ) :
+    def train_keras_model ( self, tree_X, tree_y, start_nodes=128, end_nodes=64, final_layer_choice=9, final_activation_choice='softmax' ) :
         start_time = datetime.now()
         print("Starting Training at {}".format(start_time))
 
@@ -108,10 +99,12 @@ class Boston311KerasNLP(Boston311Model):
             model = self.build_model(self.best_hyperparameters)
         else:
             hp = HyperParameters()
-            hp.Fixed('start_nodes', value=1024)
-            hp.Fixed('end_nodes', value=64)
+            hp.Fixed('start_nodes', value=start_nodes)
+            hp.Fixed('end_nodes', value=end_nodes)
+            hp.Fixed('final_layer', value=final_layer_choice)
             hp.Fixed('l2_0', value=0.00001)
             hp.Fixed('learning_rate', value=7.5842e-05)
+            hp.Fixed('final_activation', value=final_activation_choice)
 
             # Build the model with the specific hyperparameters
             model = self.build_model(hp)
@@ -193,6 +186,8 @@ class Boston311KerasNLP(Boston311Model):
         model = Sequential()
         start_nodes_choice = hp.Choice(f'start_nodes', [128, 256, 512, 1024])
         end_nodes_choice = hp.Choice(f'end_nodes', [16, 32, 64])
+        final_layer_choice = hp.Choice(f'final_layer', [16, 32, 64])
+        final_activation_choice = hp.Choice(f'final_activation', ['softmax', 'linear'])
         model.add(Dense(start_nodes_choice, input_dim=self.input_dim, activation='relu', kernel_regularizer=l2(hp.Float('l2_0', min_value=1e-5, max_value=1e-1, sampling='LOG'))))
         #if hp.Choice(f'batch_normalization', [True, False]):
         #    model.add(BatchNormalization())
@@ -204,7 +199,7 @@ class Boston311KerasNLP(Boston311Model):
         #    if hp.Choice(f'batch_normalization', [True, False]):
         #        model.add(BatchNormalization())
                 
-        model.add(Dense(9, activation='softmax'))
+        model.add(Dense(final_layer_choice, activation=final_activation_choice))
         
         top2_acc = TopKCategoricalAccuracy(k=2)
         optimizer = Adam(learning_rate=hp.Float('learning_rate', min_value=1e-5, max_value=1e-1, sampling='LOG'))
