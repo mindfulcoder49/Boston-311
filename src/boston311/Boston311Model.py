@@ -38,6 +38,10 @@ class Boston311Model:
     def save_properties(self, filepath, properties_file):
         # Save other properties
         with open(filepath + '/' + properties_file + '.json', 'w') as f:
+            if hasattr(self, 'best_hyperparameters') and self.best_hyperparameters is not None :
+                bh = self.best_hyperparameters
+            else :
+                bh = ''
             json.dump({
                 'feature_columns': self.feature_columns,
                 'feature_dict': self.feature_dict,
@@ -45,7 +49,9 @@ class Boston311Model:
                 'predict_date_range': self.predict_date_range,
                 'scenario': self.scenario,
                 'model_type': self.model_type,
+                'best_hyperparameters': bh
             }, f)
+
 
     def load_properties(self, json_file) :
         # Load other properties
@@ -56,6 +62,9 @@ class Boston311Model:
             self.train_date_range = properties['train_date_range']
             self.predict_date_range = properties['predict_date_range']
             self.scenario = properties['scenario']
+            #check if properties has a best_hyperparameters attribute, and if so, load it
+            if 'best_hyperparameters' in properties and properties['best_hyperparameters'] is not None:
+                self.best_hyperparameters = properties['best_hyperparameters']
 
 
     #load_data() - this will use the start_date and end_date. It will return a dataframe
