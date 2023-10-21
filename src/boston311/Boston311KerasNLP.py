@@ -86,14 +86,24 @@ class Boston311KerasNLP(Boston311Model):
         self.model, test_accuracy = self.train_keras_model( X, y, start_nodes, end_nodes, final_layer_choice, final_activation_choice )
         return test_accuracy
 
-    def train_keras_model ( self, tree_X, tree_y, start_nodes=128, end_nodes=64, final_layer_choice=9, final_activation_choice='softmax' ) :
+    def train_keras_model ( self, tree_X, tree_y, start_nodes=128, end_nodes=64, final_layer_choice=9, final_activation_choice='softmax', my_epochs=10 ) :
         start_time = datetime.now()
         print("Starting Training at {}".format(start_time))
 
         self.input_dim = tree_X.shape[1]
 
         # Split into training and testing sets
-        X_train, X_test, y_train, y_test = train_test_split(tree_X, tree_y, test_size=0.2, random_state=42)
+        #X_train, X_test, y_train, y_test = train_test_split(tree_X, tree_y, test_size=0.2, random_state=42)
+
+        # Calculate the index for the split
+        split_index = int(0.8 * len(tree_X))
+
+        # Create training and testing sets
+        X_train = tree_X.iloc[:split_index]
+        y_train = tree_y.iloc[:split_index]
+
+        X_test = tree_X.iloc[split_index:]
+        y_test = tree_y.iloc[split_index:]
 
         if self.best_hyperparameters is not None:
             model = self.build_model(self.best_hyperparameters)
@@ -127,7 +137,7 @@ class Boston311KerasNLP(Boston311Model):
 
         print("run fit\n")
 
-        model.fit(X_train, y_train, epochs=100, batch_size=self.batch_size, validation_data=(X_test, y_test), callbacks=[early_stopping])
+        model.fit(X_train, y_train, epochs=my_epochs, batch_size=self.batch_size, validation_data=(X_test, y_test), callbacks=[early_stopping])
 
         # Evaluate the model
         test_loss, test_accuracy, top2_accuracy = model.evaluate(X_test, y_test)

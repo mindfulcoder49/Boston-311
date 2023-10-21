@@ -49,7 +49,7 @@ class Boston311Model:
                 'predict_date_range': self.predict_date_range,
                 'scenario': self.scenario,
                 'model_type': self.model_type,
-                'best_hyperparameters': bh
+                #'best_hyperparameters': bh
             }, f)
 
 
@@ -63,8 +63,8 @@ class Boston311Model:
             self.predict_date_range = properties['predict_date_range']
             self.scenario = properties['scenario']
             #check if properties has a best_hyperparameters attribute, and if so, load it
-            if 'best_hyperparameters' in properties and properties['best_hyperparameters'] is not None:
-                self.best_hyperparameters = properties['best_hyperparameters']
+            #if 'best_hyperparameters' in properties and properties['best_hyperparameters'] is not None:
+                #self.best_hyperparameters = properties['best_hyperparameters']
 
 
     #load_data() - this will use the start_date and end_date. It will return a dataframe
