@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np
+from math import pi
+from math import cos
 import json
 import requests
 from bs4 import BeautifulSoup
@@ -92,6 +94,14 @@ class Boston311Model:
         data['survival_time'] = data['closed_dt'] - data['open_dt']
         data['event'] = data['closed_dt'].notnull().astype(int)
         data['ward_number'] = data['ward'].str.extract(r'0*(\d+)')
+
+        #add seasonality value
+        day_of_year = data['open_dt'].dt.dayofyear
+        data['season_cos'] = day_of_year.apply(lambda x: cos((x - 1) * (2. * pi / 365.25)))
+
+        #add day of week
+        weekday = data['open_dt'].dt.weekday
+        data['weekday_cos'] = weekday.apply(lambda x: cos(x * (2. * pi / 7)))
 
         # initialize a new column with NaN values
         data['survival_time_hours'] = np.nan  

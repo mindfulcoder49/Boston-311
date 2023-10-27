@@ -2,6 +2,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from datetime import datetime
 import pandas as pd
+import numpy as np
 import pickle 
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
@@ -21,7 +22,8 @@ class Boston311KerasNLP(Boston311Model):
         super().__init__(**kwargs)
         self.best_hyperparameters = None
         self.input_dim = None
-        self.batch_size = 32
+        self.batch_size = 128
+        self.patience = 10
 
 
     def save(self, filepath, model_file, properties_file):
@@ -81,9 +83,9 @@ class Boston311KerasNLP(Boston311Model):
         
         return X, y 
         
-    def train_model( self, X, y=[], start_nodes=128, end_nodes=64, final_layer_choice=9, final_activation_choice='softmax' ) :
+    def train_model( self, X, y=[], start_nodes=128, end_nodes=64, final_layer_choice=9, final_activation_choice='softmax', epochs=10 ) :
         test_accuracy = 0
-        self.model, test_accuracy = self.train_keras_model( X, y, start_nodes, end_nodes, final_layer_choice, final_activation_choice )
+        self.model, test_accuracy = self.train_keras_model( X, y, start_nodes, end_nodes, final_layer_choice, final_activation_choice, my_epochs=epochs )
         return test_accuracy
 
     def train_keras_model ( self, tree_X, tree_y, start_nodes=128, end_nodes=64, final_layer_choice=9, final_activation_choice='softmax', my_epochs=10 ) :
@@ -96,14 +98,41 @@ class Boston311KerasNLP(Boston311Model):
         #X_train, X_test, y_train, y_test = train_test_split(tree_X, tree_y, test_size=0.2, random_state=42)
 
         # Calculate the index for the split
-        split_index = int(0.8 * len(tree_X))
-
+        split_index = int(0.6 * len(tree_X))
+        ###
         # Create training and testing sets
-        X_train = tree_X.iloc[:split_index]
-        y_train = tree_y.iloc[:split_index]
+        #X_train = tree_X.iloc[:split_index]
+        #y_train = tree_y.iloc[:split_index]
 
-        X_test = tree_X.iloc[split_index:]
-        y_test = tree_y.iloc[split_index:]
+        # Make them leaky instead
+        #X_train = tree_X
+        #y_train = tree_y
+
+        #X_test = tree_X.iloc[split_index:]
+        #y_test = tree_y.iloc[split_index:]
+        ###
+
+        # Define indices
+        indices = np.arange(len(tree_X))
+
+        # For training, take all but every 5th and 4th case
+        train_idx = indices[(indices % 5 != 0)]
+        X_train = tree_X.iloc[train_idx]
+        y_train = tree_y.iloc[train_idx]
+
+        # For validation, take every 4th case
+        #val_idx = indices[indices % 5 == 1]
+        #X_val = tree_X.iloc[val_idx]
+        #y_val = tree_y.iloc[val_idx]
+
+        X_val = tree_X.iloc[split_index:]
+        y_val = tree_y.iloc[split_index:]
+
+        # For testing, take every 5th case
+        test_idx = indices[indices % 5 == 0]
+        X_test = tree_X.iloc[test_idx]
+        y_test = tree_y.iloc[test_idx]
+
 
         if self.best_hyperparameters is not None:
             model = self.build_model(self.best_hyperparameters)
@@ -122,10 +151,11 @@ class Boston311KerasNLP(Boston311Model):
         print(model.summary())
 
         #Add Early Stopping
-        early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
+        early_stopping = EarlyStopping(monitor='val_loss', patience=self.patience, restore_best_weights=True)
 
         # Fit the model
         y_train = pd.get_dummies(y_train)
+        y_val = pd.get_dummies(y_val)
 
         #print debug
         print(type(y_train), y_train.shape)
@@ -137,7 +167,7 @@ class Boston311KerasNLP(Boston311Model):
 
         print("run fit\n")
 
-        model.fit(X_train, y_train, epochs=my_epochs, batch_size=self.batch_size, validation_data=(X_test, y_test), callbacks=[early_stopping])
+        model.fit(X_train, y_train, epochs=my_epochs, batch_size=self.batch_size, validation_data=(X_val, y_val), callbacks=[early_stopping])
 
         # Evaluate the model
         test_loss, test_accuracy, top2_accuracy = model.evaluate(X_test, y_test)
