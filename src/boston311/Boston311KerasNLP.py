@@ -236,8 +236,8 @@ class Boston311KerasNLP(Boston311Model):
         while start_nodes_choice > end_nodes_choice: 
             start_nodes_choice = start_nodes_choice // 2 
             model.add(Dense(start_nodes_choice, activation='relu', kernel_regularizer=l2(hp.Float('l2_0', min_value=1e-5, max_value=1e-1, sampling='LOG'))))
-        #    if hp.Choice(f'batch_normalization', [True, False]):
-        #        model.add(BatchNormalization())
+            #add a dropout of .2
+            #model.add(Dropout(0.2))
                 
         model.add(Dense(final_layer_choice, activation=final_activation_choice))
         
