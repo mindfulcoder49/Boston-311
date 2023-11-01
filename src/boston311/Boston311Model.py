@@ -4,9 +4,10 @@ from math import pi
 from math import cos
 import json
 import requests
+import os
 from bs4 import BeautifulSoup
-from datetime import datetime
-
+from datetime import datetime, timedelta
+from pytz import timezone
 
 #refactor code as separate classes for each model type  - linear, logistic, cox, decision tree
 
@@ -40,18 +41,13 @@ class Boston311Model:
     def save_properties(self, filepath, properties_file):
         # Save other properties
         with open(filepath + '/' + properties_file + '.json', 'w') as f:
-            if hasattr(self, 'best_hyperparameters') and self.best_hyperparameters is not None :
-                bh = self.best_hyperparameters
-            else :
-                bh = ''
             json.dump({
                 'feature_columns': self.feature_columns,
                 'feature_dict': self.feature_dict,
                 'train_date_range': self.train_date_range,
                 'predict_date_range': self.predict_date_range,
                 'scenario': self.scenario,
-                'model_type': self.model_type,
-                #'best_hyperparameters': bh
+                'model_type': self.model_type
             }, f)
 
 
@@ -64,9 +60,45 @@ class Boston311Model:
             self.train_date_range = properties['train_date_range']
             self.predict_date_range = properties['predict_date_range']
             self.scenario = properties['scenario']
-            #check if properties has a best_hyperparameters attribute, and if so, load it
-            #if 'best_hyperparameters' in properties and properties['best_hyperparameters'] is not None:
-                #self.best_hyperparameters = properties['best_hyperparameters']
+
+
+    def get_datestrings(self, days=30) :
+        now = datetime.now()
+        days_timedelta = timedelta(days=days)
+        X_days_ago = now - days_timedelta
+        today_datestring = now.strftime("%Y-%m-%d")
+        X_days_ago_datestring = X_days_ago.strftime("%Y-%m-%d")
+        tomorrow_datestring = (datetime.today() + timedelta(days=1)).strftime('%Y-%m-%d')
+        return today_datestring, tomorrow_datestring, X_days_ago_datestring
+    
+    #get current datetime in Boston timezone as string
+    
+    def get_current_datetime_str(self) :
+        boston = timezone('US/Eastern')
+        now = datetime.now(boston)
+        today_datestring = now.strftime("%Y-%m-%d")
+        #get time in Boston timezone as string for a filename
+        now = datetime.now(boston)
+        time_string = now.strftime("%H-%M-%S")
+        #define datetime string
+        my_datetime = today_datestring + '_' + time_string 
+        return my_datetime
+    
+    #define a function that takes a path to a csv file and a pkl file and checks if the csv file is newer than the pkl file, and if so, loads the csv file into a dataframe and saves it as a pkl file, else loads the pkl file into a dataframe
+    def pkl_load_data(self, csv_path, pkl_path):
+        if os.path.exists(pkl_path):
+            pkl_time = os.path.getmtime(pkl_path)
+            csv_time = os.path.getmtime(csv_path)
+            if csv_time > pkl_time:
+                df = pd.read_csv(csv_path)
+                df.to_pickle(pkl_path)
+            else:
+                df = pd.read_pickle(pkl_path)
+        else:
+            df = pd.read_csv(csv_path)
+            df.to_pickle(pkl_path)
+        return df
+
 
 
     #load_data() - this will use the start_date and end_date. It will return a dataframe
@@ -89,19 +121,23 @@ class Boston311Model:
     
     #enhance_data( data ) - this will enhance the data according to our needs
     def enhance_data(self, data, train_or_predict='train') :
+        
+        data = data.copy()
         data['closed_dt'] = pd.to_datetime(data['closed_dt'])
         data['open_dt'] = pd.to_datetime(data['open_dt'])
         data['survival_time'] = data['closed_dt'] - data['open_dt']
         data['event'] = data['closed_dt'].notnull().astype(int)
         data['ward_number'] = data['ward'].str.extract(r'0*(\d+)')
 
+
+
         #add seasonality value
-        day_of_year = data['open_dt'].dt.dayofyear
-        data['season_cos'] = day_of_year.apply(lambda x: cos((x - 1) * (2. * pi / 365.25)))
+        #day_of_year = data['open_dt'].dt.dayofyear
+        #data['season_cos'] = day_of_year.apply(lambda x: cos((x - 1) * (2. * pi / 365.25)))
 
         #add day of week
-        weekday = data['open_dt'].dt.weekday
-        data['weekday_cos'] = weekday.apply(lambda x: cos(x * (2. * pi / 7)))
+        #weekday = data['open_dt'].dt.weekday
+        #data['weekday_cos'] = weekday.apply(lambda x: cos(x * (2. * pi / 7)))
 
         # initialize a new column with NaN values
         data['survival_time_hours'] = np.nan  
@@ -168,6 +204,7 @@ class Boston311Model:
 
 
         return data
+
 
 
     '''
@@ -243,22 +280,29 @@ class Boston311Model:
 
         # Get a list of all CSV files in the directory
 
+        print("Checking files_dict")
         if self.files_dict is None :
-            files_dict = {
-            '2023': url_2023,
-            '2022': url_2022,
-            '2021': url_2021,
-            '2020': url_2020,
-            '2019': url_2019,
-            '2018': url_2018,
-            '2017': url_2017,
-            '2016': url_2016,
-            '2015': url_2015,
-            '2014': url_2014,
-            '2013': url_2013,
-            '2012': url_2012,
-            '2011': url_2011
-            }
+            print("files_dict is None")
+            try :
+                print("trying to call get311URLs")
+                files_dict = self.get311URLs()
+                print("files_dict is", files_dict)
+            except :
+                files_dict = {
+                '2023': url_2023,
+                '2022': url_2022,
+                '2021': url_2021,
+                '2020': url_2020,
+                '2019': url_2019,
+                '2018': url_2018,
+                '2017': url_2017,
+                '2016': url_2016,
+                '2015': url_2015,
+                '2014': url_2014,
+                '2013': url_2013,
+                '2012': url_2012,
+                '2011': url_2011
+                }
         else :
             files_dict = self.files_dict
 
@@ -303,18 +347,19 @@ class Boston311Model:
                 #print('File', i, 'has the same column name and order as File 0')
                 same_list_order_col.append(i)
 
-        print("Files with different number of columns from File 0: ", diff_list_num_col)
-        print("Files with same number of columns as File 0: ", same_list_num_col)
-        print("Files with different column order from File 0: ", diff_list_order_col)
-        print("Files with same column order as File 0: ", same_list_order_col)
+        #print("Files with different number of columns from File 0: ", diff_list_num_col)
+        #print("Files with same number of columns as File 0: ", same_list_num_col)
+        #print("Files with different column order from File 0: ", diff_list_order_col)
+        #print("Files with same column order as File 0: ", same_list_order_col)
 
         # Concatenate the dataframes into a single dataframe
         df_all = pd.concat(dfs, ignore_index=True)
 
         return df_all        
-    
+        
 
-    def get311URLs() :
+    def get311URLs(self) :
+        print("trying to get csv URLs")
 
         # specify the URL of the page
         url = "https://data.boston.gov/dataset/311-service-requests"
@@ -338,6 +383,7 @@ class Boston311Model:
         for link in soup.find_all('a'):
             url = link.get('href')
             if url.endswith('.csv'):
+                print("Found URL:", url, "for year", current_year)
                 URL_dict[str(current_year)] = url
                 current_year = current_year - 1 
         return URL_dict

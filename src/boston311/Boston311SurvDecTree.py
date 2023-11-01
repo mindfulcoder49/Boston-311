@@ -29,7 +29,7 @@ class Boston311SurvDecTree(Boston311Model):
             self.model = pickle.load(f)
 
     def load_data(self, data=None, train_or_predict='train') :
-        return super().load_data(train_or_predict)
+        return super().load_data(data, train_or_predict)
     
     def enhance_data(self, data, train_or_predict='train'):
         return super().enhance_data(data, train_or_predict)
