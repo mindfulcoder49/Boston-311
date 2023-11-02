@@ -24,37 +24,36 @@ class Boston311KerasNN(Boston311Model):
         super().__init__(**kwargs)
         self.best_hyperparameters = None
         self.input_dim = None
-        self.batch_size = 128
-        self.patience = 10
+        self.batch_size = kwargs.get('batch_size', 32)
+        self.patience = kwargs.get('patience', 5)
         self.api_data = kwargs.get('api_data', None)
+        self.bin_edges = kwargs.get('bin_edges', None)
+        self.bin_labels = kwargs.get('bin_labels', None)
+        self.epochs = kwargs.get('epochs', None)
 
 
     def save(self, filepath, model_file, properties_file):
         # Save keras model
-        self.model.save(filepath + '/' + model_file + '.h5')
+        self.model.save(filepath + '/' + model_file + '.keras')
 
         with open(filepath + '/' + properties_file + '.json', 'w') as f:
-            bh = ""
+            save_dict = {
+                'feature_columns': self.feature_columns,
+                'feature_dict': self.feature_dict,
+                'train_date_range': self.train_date_range,
+                'predict_date_range': self.predict_date_range,
+                'scenario': self.scenario,
+                'bin_edges': self.bin_edges,
+                'bin_labels': self.bin_labels,
+                'epochs': self.epochs,
+                'patience': self.patience,
+                'batch_size': self.batch_size,
+                'input_dim': self.input_dim
+            }
             if self.best_hyperparameters is not None :
-                bh = self.best_hyperparameters.get_config()
-                json.dump({
-                    'feature_columns': self.feature_columns,
-                    'feature_dict': self.feature_dict,
-                    'train_date_range': self.train_date_range,
-                    'predict_date_range': self.predict_date_range,
-                    'scenario': self.scenario,
-                    'model_type': self.model_type,
-                    'best_hyperparameters': bh
-                }, f)
-            else :
-                json.dump({
-                    'feature_columns': self.feature_columns,
-                    'feature_dict': self.feature_dict,
-                    'train_date_range': self.train_date_range,
-                    'predict_date_range': self.predict_date_range,
-                    'scenario': self.scenario,
-                    'model_type': self.model_type
-                }, f)
+                save_dict['best_hyperparameters'] = self.best_hyperparameters.get_config()
+
+            json.dump(save_dict, f)
 
 
     def load(self, json_file, model_file):
@@ -82,27 +81,43 @@ class Boston311KerasNN(Boston311Model):
         return super().apply_scenario(data)
     
     def clean_data(self, data):
-        return super().clean_data(data)
+        data = super().clean_data(data)
+        for col in data.columns:
+            if data[col].dtype == 'bool':
+                data[col] = data[col].astype('float64')
+        return data
     
-    def add_api_data(self, data):
+    def add_api_data(self, data, api_data):
         data = data.drop_duplicates(subset=['case_enquiry_id'])
-        data = data.merge(self.api_data, on='case_enquiry_id', how='inner')
+        api_data = api_data.drop_duplicates(subset=['case_enquiry_id'])
+        data = data.merge(api_data, on='case_enquiry_id', how='inner')
+        return data
     
     def clean_data_for_prediction(self, data):
-        return super().clean_data_for_prediction(data)
+        data = super().clean_data_for_prediction(data)
+        for col in data.columns:
+            if data[col].dtype == 'bool':
+                data[col] = data[col].astype('float64')
+        return data
     
     def one_hot_encode_with_feature_dict(self, data):
         return super().one_hot_encode_with_feature_dict(data)
     
-    def predict( self ) :
-        data = self.load_data( 'predict' )
+    def predict( self, api_data=None, data=None ) :
+        if data is None :
+            data = self.load_data( train_or_predict='predict' )
+        else :
+            data = self.load_data( data, train_or_predict='predict' )
         data = self.enhance_data( data, 'predict')
         clean_data = self.clean_data_for_prediction( data )
-
-        X_predict, y_predict = self.split_data( clean_data )
+        if api_data is not None :
+            clean_data = self.add_api_data(clean_data, api_data)
+            data_limited = data[data['case_enquiry_id'].isin(api_data['case_enquiry_id'])]
+        
+        X_predict, y_predict = self.split_data( clean_data, self.bin_labels, self.bin_edges )
         y_predict = self.model.predict(X_predict)
-        data['survival_prediction'] = y_predict
-        return data
+        
+        return y_predict, data_limited 
     
     # Function 1: Generate bin_edges using a fixed hour interval
     def generate_time_bins_fixed_interval(self, hour_interval, max_days):
@@ -155,6 +170,20 @@ class Boston311KerasNN(Boston311Model):
 
         return bin_labels
     
+    def flatten_and_replace_columns(self, df, column_names):
+        new_dfs = []
+        
+        # Flatten and remove original columns
+        for col_name in column_names:
+            flattened = np.stack(df[col_name].to_numpy())
+            new_df = pd.DataFrame(flattened, columns=[f'{col_name}_{i}' for i in range(flattened.shape[1])])
+            new_dfs.append(new_df)
+            df.drop([col_name], axis=1, inplace=True)
+            
+        # Concatenate new columns to the original DataFrame
+        df = pd.concat([df] + new_dfs, axis=1)
+        return df
+    
     def split_data(self, data, bin_labels=None, bin_edges=None) :
 
         X = data.drop(['survival_time_hours', 'event'], axis=1)
@@ -180,6 +209,8 @@ class Boston311KerasNN(Boston311Model):
         print("Starting Training at {}".format(start_time))
 
         self.input_dim = tree_X.shape[1]
+        print("input_dim: {}".format(self.input_dim))
+        
 
         # Split into training and testing sets
         #X_train, X_test, y_train, y_test = train_test_split(tree_X, tree_y, test_size=0.2, random_state=42)
@@ -267,17 +298,32 @@ class Boston311KerasNN(Boston311Model):
 
         return model, test_accuracy
     
-    def run_pipeline( self, data_original=None) :
+    def run_pipeline( self, data_original=None, api_data=None) :
         data = None
+        if self.bin_edges is None :
+            print("bin_edges is None")  
+            self.bin_edges = self.generate_time_bins_fixed_interval(24, 180)
+            self.bin_labels = self.generate_bin_labels(self.bin_edges, "over 6 months")
+        if self.bin_labels is None :
+            print("bin_labels is None")
+            last_edge = self.bin_edges[-1]
+            overflow_label = self.time_format(last_edge)
+            self.bin_labels = self.generate_bin_labels(self.bin_edges, "over " + overflow_label)
         if data_original is None :
             data = self.load_data()
         else :
-            data = data_original.copy()
+            data = self.load_data(data_original)
         data = self.enhance_data(data)
         data = self.apply_scenario(data)
         data = self.clean_data(data)
-        X, y = self.split_data(data)
-        test_accuracy = self.train_model( X, y )
+        if api_data is not None :
+            data = self.add_api_data(data, api_data)
+        #sort before split_data so train_model can take every 5th case for testing
+        data = data.sort_values(by='case_enquiry_id')
+        X, y = self.split_data(data, self.bin_labels, self.bin_edges)
+        if self.epochs is None :
+            self.epochs = 2
+        test_accuracy = self.train_model( X, y, epochs=self.epochs )
         return test_accuracy
     
     def tune_model( self, X_train, y_train, model_dir, verboseLevel=1):

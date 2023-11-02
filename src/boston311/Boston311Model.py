@@ -207,15 +207,20 @@ class Boston311Model:
 
 
 
-    '''
-    clean_data_for_prediction( data ) - this will drop any columns not in feature_columns, and one hot encode the training data for prediction with the model by using the feature_columns and feature_dict to ensure the cleaned data is in the correct format for prediction with this model.
-    '''
+    
+    #clean_data_for_prediction( data ) - this will drop any columns not in feature_columns, and one hot encode the training data for prediction with the model by using the feature_columns and feature_dict to ensure the cleaned data is in the correct format for prediction with this model.
+    
 
     def clean_data_for_prediction( self, data ) :
+        print("columns in data before drop:", data.columns)
         
-        cols_to_drop = data.columns.difference(self.feature_columns + ['case_enquiry_id'])
+        cols_to_drop = data.columns.difference(self.feature_columns + ['case_enquiry_id', 'event', 'survival_time_hours'])
+
+        print("columns to drop:", cols_to_drop)
 
         data = data.drop(columns=cols_to_drop, axis=1)
+
+        print("columns in data before ohewfd:", data.columns)
 
         data = self.one_hot_encode_with_feature_dict( data )
 
@@ -226,7 +231,7 @@ class Boston311Model:
         # Loop through each column in the DataFrame
         for column in data.columns:
             # Check if the column is case_enquiry_id and skip it
-            if column == 'case_enquiry_id':
+            if column in ['case_enquiry_id', 'event', 'survival_time_hours']:
                 continue
             # Get the list of allowed values for this column
             allowed = self.feature_dict.get(column, [])
