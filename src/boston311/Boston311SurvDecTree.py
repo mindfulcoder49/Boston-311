@@ -47,7 +47,7 @@ class Boston311SurvDecTree(Boston311Model):
         return super().one_hot_encode_with_feature_dict(data)
     
     def predict( self ) :
-        data = self.load_data( 'predict' )
+        data = self.load_data( train_or_predict='predict' )
         data = self.enhance_data( data, 'predict')
         clean_data = self.clean_data_for_prediction( data )
 

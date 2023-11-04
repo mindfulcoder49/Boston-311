@@ -21,7 +21,7 @@ class Boston311LinReg(Boston311Model):
         self.model = keras.models.load_model(model_file)
     
     def predict( self ) :
-        data = self.load_data( 'predict' )
+        data = self.load_data( train_or_predict='predict' )
         data = self.enhance_data( data, 'predict')
         clean_data = self.clean_data_for_prediction( data )
 

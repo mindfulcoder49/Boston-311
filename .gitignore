@@ -12,4 +12,5 @@ models/featrixclient/*
 featrix-client.log
 install-package.sh
 Featrix_demo.*
+*.xz
 

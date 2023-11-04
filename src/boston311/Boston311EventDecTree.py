@@ -28,7 +28,7 @@ class Boston311EventDecTree(Boston311Model):
             self.model = pickle.load(f)
     
     def predict( self ) :
-        data = self.load_data( 'predict' )
+        data = self.load_data( train_or_predict='predict' )
         data = self.enhance_data( data, 'predict')
         clean_data = self.clean_data_for_prediction( data )
 

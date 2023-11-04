@@ -143,6 +143,8 @@ class Boston311KerasNN(Boston311Model):
         return bin_edges
     
     def time_format(self, hours):
+        if hours == 0:
+            return "0"
         seconds = hours * 3600
         minutes, seconds = divmod(seconds, 60)
         hours, minutes = divmod(minutes, 60)
