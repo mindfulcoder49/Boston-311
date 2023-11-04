@@ -59,8 +59,15 @@ class Boston311SurvDecTree(Boston311Model):
     def split_data(self, data) :
 
         X = data.drop(['survival_time_hours', 'event'], axis=1)
-        bin_edges = [0, 24, 168, 672, 8736, 1314870]
-        bin_labels = ["0-24 hours", "1-7 days","2-4 weeks","1-12 months","over a year"]
+        if self.bin_edges is None :
+            bin_edges = [0, 24, 168, 672, 8736, 1314870]
+            bin_labels = ["0-24 hours", "1-7 days","2-4 weeks","1-12 months","over a year"]
+        else :
+            if self.bin_labels is None :
+                self.bin_edges = self.generate_bin_labels(self.bin_edges)
+            bin_edges = self.bin_edges
+            bin_labels = self.bin_labels
+
         y = pd.cut(data['survival_time_hours'], bins=bin_edges, labels=bin_labels)
             
         

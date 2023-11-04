@@ -113,64 +113,14 @@ class Boston311KerasNN(Boston311Model):
         if api_data is not None :
             clean_data = self.add_api_data(clean_data, api_data)
             data_limited = data[data['case_enquiry_id'].isin(api_data['case_enquiry_id'])]
+        else :
+            data_limited = data
         
         X_predict, y_predict = self.split_data( clean_data, self.bin_labels, self.bin_edges )
         y_predict = self.model.predict(X_predict)
         
         return y_predict, data_limited 
     
-    # Function 1: Generate bin_edges using a fixed hour interval
-    def generate_time_bins_fixed_interval(self, hour_interval, max_days):
-        max_hours = max_days * 24
-        # bin_edges = [0] + [1.3 ** i for i in range(1, int(math.log(max_hours, 1.5)) + 1)]
-        bin_edges = [i for i in range(0, max_hours + 1, hour_interval)]
-        # bin_edges_days = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,21,28,35,42,49,56,63,70,80,90,100,120,160,180,365,712]
-        # for i in bin_edges_days :
-        #     bin_edges.append(i*24)
-        bin_edges.append(1000000)
-        return bin_edges
-
-    # Function 2: Generate bin_edges using statistics
-    def generate_time_bins_statistics(self, df, num_intervals=60):
-        # Sort DataFrame by survival_time_hours
-        df = df.sort_values(by='survival_time_hours')
-        # Calculate the size for each bin
-        bin_size = len(df) // num_intervals
-        # Get bin edges
-        bin_edges = [df['survival_time_hours'].iloc[i * bin_size] for i in range(num_intervals)]
-        bin_edges.append(df['survival_time_hours'].max())  # add the maximum value
-        bin_edges = [0] + bin_edges  # add 0 at the beginning
-        return bin_edges
-    
-    def time_format(self, hours):
-        if hours == 0:
-            return "0"
-        seconds = hours * 3600
-        minutes, seconds = divmod(seconds, 60)
-        hours, minutes = divmod(minutes, 60)
-        days, hours = divmod(hours, 24)
-        weeks, days = divmod(days, 7)
-        years, weeks = divmod(weeks, 52)
-
-        components = [("y", years), ("w", weeks), ("d", days), ("h", hours), ("m", minutes), ("s", seconds)]
-        label = "".join([f"{value}{unit}" for unit, value in components if value > 0])
-        return label
-
-    def generate_bin_labels(self, bin_edges, overflow_label=None):
-        bin_labels = []
-        for i in range(len(bin_edges) - 1):
-            start_label = self.time_format(bin_edges[i])
-            end_label = self.time_format(bin_edges[i + 1])
-            if start_label != end_label:
-                label = f"{start_label}-{end_label}"
-            else:
-                label = start_label
-            bin_labels.append(label)
-
-        if overflow_label is not None:
-            bin_labels[-1] = overflow_label
-
-        return bin_labels
     
     def flatten_and_replace_columns(self, df, column_names):
         new_dfs = []
