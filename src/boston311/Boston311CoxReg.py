@@ -23,8 +23,11 @@ class Boston311CoxReg(Boston311Model):
         with open(model_file, 'rb') as f:
             self.model = pickle.load(f)
     
-    def predict( self ) :
-        data = self.load_data( train_or_predict='predict' )
+    def predict( self, data=None ) :
+        if data is None :
+            data = self.load_data( train_or_predict='predict' )
+        else :
+            data = self.load_data( data=data, train_or_predict='predict' )
         data = self.enhance_data( data, 'predict')
         clean_data = self.clean_data_for_prediction( data )
 
@@ -70,7 +73,7 @@ class Boston311CoxReg(Boston311Model):
         if data_original is None :
             data = self.load_data()
         else :
-            data = data_original.copy()
+            data = self.load_data( data=data_original )
         data = self.enhance_data(data)
         data = self.apply_scenario(data)
         data = self.clean_data(data)

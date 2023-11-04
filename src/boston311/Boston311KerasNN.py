@@ -250,8 +250,7 @@ class Boston311KerasNN(Boston311Model):
 
         return model, test_accuracy
     
-    def run_pipeline( self, data_original=None, api_data=None) :
-        data = None
+    def run_pipeline( self, data=None, api_data=None) :
         if self.bin_edges is None :
             print("bin_edges is None")  
             self.bin_edges = self.generate_time_bins_fixed_interval(24, 180)
@@ -261,10 +260,10 @@ class Boston311KerasNN(Boston311Model):
             last_edge = self.bin_edges[-1]
             overflow_label = self.time_format(last_edge)
             self.bin_labels = self.generate_bin_labels(self.bin_edges, "over " + overflow_label)
-        if data_original is None :
+        if data is None :
             data = self.load_data()
         else :
-            data = self.load_data(data_original)
+            data = self.load_data(data=data)
         data = self.enhance_data(data)
         data = self.apply_scenario(data)
         data = self.clean_data(data)

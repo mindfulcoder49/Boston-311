@@ -46,14 +46,18 @@ class Boston311SurvDecTree(Boston311Model):
     def one_hot_encode_with_feature_dict(self, data):
         return super().one_hot_encode_with_feature_dict(data)
     
-    def predict( self ) :
-        data = self.load_data( train_or_predict='predict' )
+    def predict( self, data=None ) :
+        if data is None :
+            data = self.load_data( train_or_predict='predict' )
+        else :
+            data = self.load_data( data=data, train_or_predict='predict' )
         data = self.enhance_data( data, 'predict')
         clean_data = self.clean_data_for_prediction( data )
 
         X_predict, y_predict = self.split_data( clean_data )
         y_predict = self.model.predict(X_predict)
-        data['survival_prediction'] = y_predict
+        data.insert(0, 'survival_prediction', y_predict)
+
         return data
     
     def split_data(self, data) :
@@ -104,12 +108,11 @@ class Boston311SurvDecTree(Boston311Model):
 
         return model, test_accuracy
     
-    def run_pipeline( self, data_original=None) :
-        data = None
-        if data_original is None :
+    def run_pipeline( self, data=None) :
+        if data is None :
             data = self.load_data()
         else :
-            data = data_original.copy()
+            data = self.load_data( data=data )
         data = self.enhance_data(data)
         data = self.apply_scenario(data)
         data = self.clean_data(data)

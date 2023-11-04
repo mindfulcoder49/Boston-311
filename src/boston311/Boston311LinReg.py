@@ -20,16 +20,25 @@ class Boston311LinReg(Boston311Model):
         super().load_properties(json_file)
         self.model = keras.models.load_model(model_file)
     
-    def predict( self ) :
-        data = self.load_data( train_or_predict='predict' )
+    def predict( self, data=None ) :
+        if data is None :
+            data = self.load_data( train_or_predict='predict' )
+        else :
+            data = self.load_data( data=data, train_or_predict='predict' )
         data = self.enhance_data( data, 'predict')
         clean_data = self.clean_data_for_prediction( data )
 
         X_predict, y_predict = self.split_data( clean_data )
         y_predict = self.model.predict(X_predict)
-        data['survival_prediction'] = y_predict
-        data['survival_timedelta'] = data['survival_prediction'].apply(lambda x: pd.Timedelta(seconds=(x*3600)))
-        data['closed_dt_prediction'] = data['open_dt'] + data['survival_timedelta']
+        # Insert survival_timedelta at the leftmost side of the DataFrame
+        data.insert(0, 'survival_timedelta', data['survival_prediction'].apply(lambda x: pd.Timedelta(seconds=(x*3600))))
+
+        # Since survival_timedelta depends on survival_prediction, we insert survival_prediction next
+        data.insert(0, 'survival_prediction', y_predict)
+
+        # Insert closed_dt_prediction at the leftmost side of the DataFrame
+        data.insert(0, 'closed_dt_prediction', data['open_dt'] + data['survival_timedelta'])
+
         return data
        
     def split_data(self, data) :
@@ -72,12 +81,11 @@ class Boston311LinReg(Boston311Model):
 
         return model
     
-    def run_pipeline( self, data_original=None) :
-        data = None
-        if data_original is None :
+    def run_pipeline( self, data=None) :
+        if data is None :
             data = self.load_data()
         else :
-            data = data_original.copy()
+            data = self.load_data( data=data )
         data = self.enhance_data(data)
         data = self.apply_scenario(data)
         data = self.clean_data(data)
