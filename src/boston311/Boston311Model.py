@@ -114,6 +114,8 @@ class Boston311Model:
             end_date = pd.to_datetime(self.predict_date_range['end'])
         if data is None :
             data = self.load_data_from_urls(range(start_date.year, end_date.year+1))
+        else :
+            data = data.copy()
 
         data['open_dt'] = pd.to_datetime(data['open_dt'])
         data = data[(data['open_dt'] >= start_date) & (data['open_dt'] <= end_date)]
