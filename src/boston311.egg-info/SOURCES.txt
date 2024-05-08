@@ -13,5 +13,4 @@ src/boston311/unit_tests.py
 src/boston311.egg-info/PKG-INFO
 src/boston311.egg-info/SOURCES.txt
 src/boston311.egg-info/dependency_links.txt
-src/boston311.egg-info/entry_points.txt
 src/boston311.egg-info/top_level.txt
