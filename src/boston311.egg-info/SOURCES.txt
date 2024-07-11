@@ -1,7 +1,6 @@
 README.md
 pyproject.toml
 setup.py
-src/boston311/Boston311CoxReg.py
 src/boston311/Boston311EventDecTree.py
 src/boston311/Boston311KerasNN.py
 src/boston311/Boston311LinReg.py

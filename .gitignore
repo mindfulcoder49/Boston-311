@@ -13,4 +13,4 @@ featrix-client.log
 install-package.sh
 Featrix_demo.*
 *.xz
-
+.venv
